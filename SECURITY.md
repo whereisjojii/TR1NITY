@@ -6,9 +6,9 @@
 
 Instead, email the maintainers privately at one of:
 
-- **Hamza** — *(contact via repo owner)*
-- **Irtaza** — *(contact via repo owner)*
-- **Hammad** — *(contact via repo owner)*
+- **Hamza** — _(contact via repo owner)_
+- **Irtaza** — _(contact via repo owner)_
+- **Hammad** — _(contact via repo owner)_
 
 You can also use GitHub's [private security advisory](https://github.com/whereisjojii/TR1NITY/security/advisories/new) flow.
 
@@ -20,11 +20,11 @@ We aim to:
 
 ## Supported versions
 
-| Version | Supported |
-|---------|-----------|
-| `main` (development) | yes |
+| Version                    | Supported                  |
+| -------------------------- | -------------------------- |
+| `main` (development)       | yes                        |
 | Tagged releases (`v0.x.x`) | best-effort during pre-1.0 |
-| `v1.0.0`+ | yes |
+| `v1.0.0`+                  | yes                        |
 
 ## Scope
 
@@ -38,4 +38,4 @@ This policy covers the TR1NITY codebase only. Vulnerabilities in upstream depend
 
 ## Defensive-only commitment
 
-TR1NITY is, and will remain, a defender-side platform. We will not publish or accept contributions that ship offensive capabilities (live-target exploitation, malware staging, credential harvesting). Synthetic attack *generators* used within our own test pipeline (e.g. `make demo`) are explicitly scoped to the local test environment.
+TR1NITY is, and will remain, a defender-side platform. We will not publish or accept contributions that ship offensive capabilities (live-target exploitation, malware staging, credential harvesting). Synthetic attack _generators_ used within our own test pipeline (e.g. `make demo`) are explicitly scoped to the local test environment.

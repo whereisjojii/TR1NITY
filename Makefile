@@ -53,18 +53,18 @@ demo: ## Generate a synthetic Wazuh + firewall + WAF attack chain
 	@echo "[demo] not implemented yet. Coming in Phase 1."
 
 test: ## Run unit tests across all services
-	@for svc in ingestor correlator ai-assist api; do \
+	@set -e; for svc in ingestor correlator ai-assist api; do \
 	    if [ -d services/$$svc/tests ]; then \
 	        echo "===> services/$$svc"; \
-	        ( cd services/$$svc && pytest -q ); \
+	        ( cd services/$$svc && PYTHONPATH=. pytest -q ); \
 	    fi; \
 	done
 
-lint: ## Lint all services
-	@for svc in ingestor correlator ai-assist api; do \
+lint: ## Lint all services with ruff
+	@set -e; for svc in ingestor correlator ai-assist api; do \
 	    if [ -f services/$$svc/pyproject.toml ] || [ -f services/$$svc/requirements.txt ]; then \
 	        echo "===> ruff services/$$svc"; \
-	        ruff check services/$$svc; \
+	        ( cd services/$$svc && ruff check . ); \
 	    fi; \
 	done
 

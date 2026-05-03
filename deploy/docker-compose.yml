@@ -1,0 +1,267 @@
+# ============================================================
+# TR1NITY · Docker Compose · Phase 0 — Foundation (v0.1.0)
+# ============================================================
+# `make up` from the repo root will boot:
+#   wazuh-manager      Wazuh server      (HIDS)
+#   wazuh-indexer      OpenSearch fork   (storage)
+#   postgres           Cases / audit
+#   chromadb           RAG vector store  (Phase 5)
+#   ingestor           FastAPI · 8001    (Module 1, Phase 1)
+#   correlator         FastAPI · 8002    (Module 2, Phase 2)
+#   ai-assist          FastAPI · 8003    (Module 3, Phase 5)
+#   api                FastAPI · 8000    (Module 5, Phase 3)
+#
+# Phase 0 commitment: every service in this file boots clean and
+# answers /healthz with HTTP 200, on a 16 GB host.
+# ============================================================
+
+name: tr1nity
+
+x-common-env: &common-env
+  TR1NITY_ENV: ${TR1NITY_ENV:-dev}
+  TR1NITY_LOG_LEVEL: ${TR1NITY_LOG_LEVEL:-INFO}
+
+x-restart: &restart
+  restart: unless-stopped
+
+services:
+  # ----------------------------------------------------------
+  # Wazuh manager (host-based IDS, file-integrity monitoring,
+  # log forwarder). Phase 1 wires the webhook to ingestor.
+  # ----------------------------------------------------------
+  wazuh-manager:
+    image: wazuh/wazuh-manager:4.9.0
+    container_name: tr1nity-wazuh-manager
+    hostname: wazuh-manager
+    <<: *restart
+    profiles: ["full", "wazuh"]
+    environment:
+      INDEXER_URL: https://wazuh-indexer:9200
+      INDEXER_USERNAME: admin
+      INDEXER_PASSWORD: ${OPENSEARCH_PASSWORD:-ChangeMeAtFirstBoot!}
+      FILEBEAT_SSL_VERIFICATION_MODE: none
+    ulimits:
+      memlock: { soft: -1, hard: -1 }
+      nofile: { soft: 655360, hard: 655360 }
+    ports:
+      - "1514:1514/udp"   # syslog
+      - "1515:1515"       # agent registration
+      - "55000:55000"     # API
+    volumes:
+      - wazuh-manager-config:/var/ossec/etc
+      - wazuh-manager-logs:/var/ossec/logs
+    depends_on:
+      wazuh-indexer:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "/var/ossec/bin/wazuh-control", "status"]
+      interval: 60s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+
+  # ----------------------------------------------------------
+  # Wazuh Indexer (OpenSearch fork). Single-node dev profile.
+  # ----------------------------------------------------------
+  wazuh-indexer:
+    image: wazuh/wazuh-indexer:4.9.0
+    container_name: tr1nity-wazuh-indexer
+    hostname: wazuh-indexer
+    <<: *restart
+    profiles: ["full", "wazuh"]
+    environment:
+      OPENSEARCH_JAVA_OPTS: "-Xms1g -Xmx1g"
+      bootstrap.memory_lock: "true"
+      discovery.type: single-node
+      DISABLE_SECURITY_PLUGIN: "false"
+    ulimits:
+      memlock: { soft: -1, hard: -1 }
+      nofile: { soft: 65536, hard: 65536 }
+    ports:
+      - "9200:9200"
+    volumes:
+      - wazuh-indexer-data:/var/lib/wazuh-indexer
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sk -u admin:${OPENSEARCH_PASSWORD:-ChangeMeAtFirstBoot!} https://localhost:9200/_cluster/health | grep -E 'green|yellow' || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 10
+      start_period: 30s
+
+  # ----------------------------------------------------------
+  # PostgreSQL — cases, audit trail, FP feedback labels,
+  # runbook edit history.
+  # ----------------------------------------------------------
+  postgres:
+    image: postgres:16-alpine
+    container_name: tr1nity-postgres
+    hostname: postgres
+    <<: *restart
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-tr1nity}
+      POSTGRES_USER: ${POSTGRES_USER:-tr1nity}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-ChangeMeAtFirstBoot!}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER:-tr1nity} -d $${POSTGRES_DB:-tr1nity}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
+
+  # ----------------------------------------------------------
+  # ChromaDB — RAG vector store (used in Phase 5 by ai-assist).
+  # ----------------------------------------------------------
+  chromadb:
+    image: chromadb/chroma:0.5.20
+    container_name: tr1nity-chromadb
+    hostname: chromadb
+    <<: *restart
+    environment:
+      IS_PERSISTENT: "TRUE"
+      ANONYMIZED_TELEMETRY: "FALSE"
+    ports:
+      - "8004:8000"
+    volumes:
+      - chromadb-data:/chroma/.chroma/index
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/v2/heartbeat"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  # ----------------------------------------------------------
+  # TR1NITY services (Phase 0 hello-worlds; full impl per phase)
+  # ----------------------------------------------------------
+  ingestor:
+    build:
+      context: ../services/ingestor
+      dockerfile: Dockerfile
+    image: tr1nity/ingestor:0.1.0
+    container_name: tr1nity-ingestor
+    hostname: ingestor
+    <<: *restart
+    environment:
+      <<: *common-env
+      OPENSEARCH_HOST: wazuh-indexer
+      OPENSEARCH_PORT: 9200
+      OPENSEARCH_USERNAME: ${OPENSEARCH_USERNAME:-admin}
+      OPENSEARCH_PASSWORD: ${OPENSEARCH_PASSWORD:-ChangeMeAtFirstBoot!}
+      OPENSEARCH_VERIFY_TLS: "false"
+    ports:
+      - "${TR1NITY_INGESTOR_PORT:-8001}:8001"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request,sys; r=urllib.request.urlopen('http://localhost:8001/healthz', timeout=3); sys.exit(0 if r.status==200 else 1)"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  correlator:
+    build:
+      context: ../services/correlator
+      dockerfile: Dockerfile
+    image: tr1nity/correlator:0.1.0
+    container_name: tr1nity-correlator
+    hostname: correlator
+    <<: *restart
+    environment:
+      <<: *common-env
+      OPENSEARCH_HOST: wazuh-indexer
+      OPENSEARCH_PORT: 9200
+      OPENSEARCH_USERNAME: ${OPENSEARCH_USERNAME:-admin}
+      OPENSEARCH_PASSWORD: ${OPENSEARCH_PASSWORD:-ChangeMeAtFirstBoot!}
+      OPENSEARCH_VERIFY_TLS: "false"
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_DB: ${POSTGRES_DB:-tr1nity}
+      POSTGRES_USER: ${POSTGRES_USER:-tr1nity}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-ChangeMeAtFirstBoot!}
+    ports:
+      - "${TR1NITY_CORRELATOR_PORT:-8002}:8002"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request,sys; r=urllib.request.urlopen('http://localhost:8002/healthz', timeout=3); sys.exit(0 if r.status==200 else 1)"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  ai-assist:
+    build:
+      context: ../services/ai-assist
+      dockerfile: Dockerfile
+    image: tr1nity/ai-assist:0.1.0
+    container_name: tr1nity-ai-assist
+    hostname: ai-assist
+    <<: *restart
+    environment:
+      <<: *common-env
+      MOCK_LLM: ${MOCK_LLM:-true}
+      LLM_MODEL_PATH: ${LLM_MODEL_PATH:-/models/foundation-sec-8b-instruct.Q4_K_M.gguf}
+      LLM_BACKEND: ${LLM_BACKEND:-vulkan}
+      LLM_THREADS: ${LLM_THREADS:-4}
+      LLM_CTX_SIZE: ${LLM_CTX_SIZE:-8192}
+    ports:
+      - "${TR1NITY_AI_ASSIST_PORT:-8003}:8003"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request,sys; r=urllib.request.urlopen('http://localhost:8003/healthz', timeout=3); sys.exit(0 if r.status==200 else 1)"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  api:
+    build:
+      context: ../services/api
+      dockerfile: Dockerfile
+    image: tr1nity/api:0.1.0
+    container_name: tr1nity-api
+    hostname: api
+    <<: *restart
+    environment:
+      <<: *common-env
+      TR1NITY_API_JWT_SECRET: ${TR1NITY_API_JWT_SECRET:-change-me-to-a-random-32-char-string-min}
+      INGESTOR_URL: http://ingestor:8001
+      CORRELATOR_URL: http://correlator:8002
+      AI_ASSIST_URL: http://ai-assist:8003
+    ports:
+      - "${TR1NITY_API_PORT:-8000}:8000"
+    depends_on:
+      ingestor:
+        condition: service_healthy
+      correlator:
+        condition: service_healthy
+      ai-assist:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request,sys; r=urllib.request.urlopen('http://localhost:8000/healthz', timeout=3); sys.exit(0 if r.status==200 else 1)"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+# ============================================================
+# Persistent volumes
+# ============================================================
+volumes:
+  wazuh-manager-config:
+    name: tr1nity-wazuh-manager-config
+  wazuh-manager-logs:
+    name: tr1nity-wazuh-manager-logs
+  wazuh-indexer-data:
+    name: tr1nity-wazuh-indexer-data
+  postgres-data:
+    name: tr1nity-postgres-data
+  chromadb-data:
+    name: tr1nity-chromadb-data
+
+networks:
+  default:
+    name: tr1nity-net

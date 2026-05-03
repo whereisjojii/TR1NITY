@@ -64,18 +64,18 @@ A rendered, blue-themed PDF version of this diagram is included in the Phase-1 r
 
 ## Service inventory (Phase 0 → v1.0)
 
-| Service | Tech | Port | Purpose |
-|---------|------|------|---------|
-| `wazuh-manager` | Wazuh 4.x (upstream image) | 1514, 1515, 55000 | HIDS server |
-| `wazuh-indexer` | Wazuh Indexer (OpenSearch fork) | 9200 | Event store |
-| `wazuh-dashboard` | Wazuh Dashboard | 5601 | Wazuh-native UI (dev only; we replace with the Cockpit) |
-| `postgres` | Postgres 16 | 5432 | Cases, audit, FP feedback, runbook history |
-| `chromadb` | ChromaDB (in-process Python lib) | — | Vector store for RAG |
-| `ingestor` | FastAPI + Pydantic | 8001 | Receives webhook / syslog → ECS → OpenSearch |
-| `correlator` | FastAPI + asyncio | 8002 | Periodic loop: temporal grouping, entity resolution, ATT&CK, threat-intel, SIGMA |
-| `ai-assist` | FastAPI + `llama.cpp` (Vulkan) | 8003 | Async drafting of post-incident reports, runbooks, compliance summaries |
-| `api` | FastAPI + WebSocket | 8000 | Public REST + WebSocket; serves the static React build |
-| `ui` (build artefact, served by `api`) | React + Vite + Tailwind + shadcn/ui | — | The Cockpit |
+| Service                                | Tech                                | Port              | Purpose                                                                          |
+| -------------------------------------- | ----------------------------------- | ----------------- | -------------------------------------------------------------------------------- |
+| `wazuh-manager`                        | Wazuh 4.x (upstream image)          | 1514, 1515, 55000 | HIDS server                                                                      |
+| `wazuh-indexer`                        | Wazuh Indexer (OpenSearch fork)     | 9200              | Event store                                                                      |
+| `wazuh-dashboard`                      | Wazuh Dashboard                     | 5601              | Wazuh-native UI (dev only; we replace with the Cockpit)                          |
+| `postgres`                             | Postgres 16                         | 5432              | Cases, audit, FP feedback, runbook history                                       |
+| `chromadb`                             | ChromaDB (in-process Python lib)    | —                 | Vector store for RAG                                                             |
+| `ingestor`                             | FastAPI + Pydantic                  | 8001              | Receives webhook / syslog → ECS → OpenSearch                                     |
+| `correlator`                           | FastAPI + asyncio                   | 8002              | Periodic loop: temporal grouping, entity resolution, ATT&CK, threat-intel, SIGMA |
+| `ai-assist`                            | FastAPI + `llama.cpp` (Vulkan)      | 8003              | Async drafting of post-incident reports, runbooks, compliance summaries          |
+| `api`                                  | FastAPI + WebSocket                 | 8000              | Public REST + WebSocket; serves the static React build                           |
+| `ui` (build artefact, served by `api`) | React + Vite + Tailwind + shadcn/ui | —                 | The Cockpit                                                                      |
 
 Total RAM at full tilt: ~9 GB (Wazuh manager + indexer ~3 GB + Foundation-Sec-8B Q4 ~5 GB + the rest <1 GB). Headroom on a 16 GB host: ~7 GB.
 
@@ -88,7 +88,7 @@ Total RAM at full tilt: ~9 GB (Wazuh manager + indexer ~3 GB + Foundation-Sec-8B
 3. **Ingestion** — `ingestor` accepts webhook from Wazuh, syslog from firewall (UDP 514), Filebeat shipment from ModSecurity. Each format has a dedicated parser; output is a single ECS-shaped JSON document.
 4. **Normalize** — Common fields: `@timestamp`, `event.module`, `source.ip`, `destination.ip`, `user.name`, `host.name`, `event.severity`, `threat.tactic`, `threat.technique`, `tr1nity.raw` (original payload).
 5. **Index** — Document written to `tr1nity-events-YYYY.MM.DD` with ISM (Index State Management) hot → warm → cold → delete lifecycle (default: 7d hot, 30d warm, 90d cold close, 180d delete).
-6. **Correlate** — Every 30 seconds the `correlator` queries the last 5 minutes, groups events by `(source.ip, destination.ip OR user.name, host.name)`, materializes an *incident* document with all source events linked, ATT&CK techniques tagged, and threat-intel auto-attached.
+6. **Correlate** — Every 30 seconds the `correlator` queries the last 5 minutes, groups events by `(source.ip, destination.ip OR user.name, host.name)`, materializes an _incident_ document with all source events linked, ATT&CK techniques tagged, and threat-intel auto-attached.
 7. **Enrich** — Cached lookups against AbuseIPDB / OTX / NVD / abuse.ch / GeoLite2. 24-hour TTL per IOC keeps free-tier limits happy.
 8. **FP score** — Three layers: (i) deterministic YAML whitelist, (ii) sklearn classifier learning from analyst "Mark FP" clicks, (iii) analyst-authored suppression rules. Each incident gets `fp_score` ∈ \[0, 1\].
 9. **Cockpit** — Incident appears in the analyst queue, sorted ascending by `fp_score` (high-confidence first). Single-pane investigation view shows raw payload, enrichment sidebar, entity timeline, similar past incidents (semantic search via ChromaDB).
@@ -100,14 +100,14 @@ Total RAM at full tilt: ~9 GB (Wazuh manager + indexer ~3 GB + Foundation-Sec-8B
 
 ## Storage
 
-| Data | Where | Retention |
-|------|-------|-----------|
-| Raw events | OpenSearch `tr1nity-events-*` | 7d hot, 30d warm, 90d cold close, 180d delete (configurable) |
-| Incidents (correlated) | OpenSearch `tr1nity-incidents-*` | 365d default |
-| Cases, audit, FP feedback, runbook history | PostgreSQL | Forever |
-| RAG vectors (ATT&CK, NVD, SIGMA, runbooks, post-mortems) | ChromaDB (persistent on disk) | Forever; rebuilt on demand |
-| ML models (FP classifier) | `models/` (gitignored) | Versioned; published as GitHub Releases |
-| Threat-intel cache | Redis (or in-process LRU) | 24h TTL per IOC |
+| Data                                                     | Where                            | Retention                                                    |
+| -------------------------------------------------------- | -------------------------------- | ------------------------------------------------------------ |
+| Raw events                                               | OpenSearch `tr1nity-events-*`    | 7d hot, 30d warm, 90d cold close, 180d delete (configurable) |
+| Incidents (correlated)                                   | OpenSearch `tr1nity-incidents-*` | 365d default                                                 |
+| Cases, audit, FP feedback, runbook history               | PostgreSQL                       | Forever                                                      |
+| RAG vectors (ATT&CK, NVD, SIGMA, runbooks, post-mortems) | ChromaDB (persistent on disk)    | Forever; rebuilt on demand                                   |
+| ML models (FP classifier)                                | `models/` (gitignored)           | Versioned; published as GitHub Releases                      |
+| Threat-intel cache                                       | Redis (or in-process LRU)        | 24h TTL per IOC                                              |
 
 ---
 
@@ -119,7 +119,7 @@ For the rationale on these cuts, see [`docs/planning/02-final-scope.md`](docs/pl
 - No self-rewriting SIGMA rule generator.
 - No UEBA module (no baseline data to support it).
 - No Markov-chain kill-chain prediction.
-- No bundled TheHive / Cortex / MISP servers (we ship lightweight equivalents and an opt-in TheHive *adapter*).
+- No bundled TheHive / Cortex / MISP servers (we ship lightweight equivalents and an opt-in TheHive _adapter_).
 - No always-on LLM enrichment of every alert (the LLM drafts post-incidents, never triages real-time).
 
 ---

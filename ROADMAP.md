@@ -117,13 +117,13 @@ The full week-by-week breakdown is in [`docs/planning/03-build-pathway.md`](docs
 
 ## Success metrics (target at v1.0)
 
-| Metric | Target |
-|--------|--------|
-| Quickstart from `git clone` to first alert | < 15 min |
-| FP rate after 2 weeks of analyst feedback | < 30 % |
-| Time-to-triage (vs. unfederated baseline) | −70 % |
-| Outside contributors at 90 days post-launch | ≥ 3 |
-| GitHub stars at 90 days post-launch | ≥ 500 |
+| Metric                                      | Target   |
+| ------------------------------------------- | -------- |
+| Quickstart from `git clone` to first alert  | < 15 min |
+| FP rate after 2 weeks of analyst feedback   | < 30 %   |
+| Time-to-triage (vs. unfederated baseline)   | −70 %    |
+| Outside contributors at 90 days post-launch | ≥ 3      |
+| GitHub stars at 90 days post-launch         | ≥ 500    |
 
 ---
 

@@ -1,0 +1,132 @@
+site_name: TR1NITY
+site_description: Unified SIEM Correlation Platform for Wazuh, Firewall, and WAF Logs
+site_author: Hamza, Irtaza, Hammad
+site_url: https://whereisjojii.github.io/TR1NITY/
+repo_url: https://github.com/whereisjojii/TR1NITY
+repo_name: whereisjojii/TR1NITY
+edit_uri: edit/main/docs/
+copyright: "&copy; 2026 Hamza, Irtaza, Hammad — TR1NITY contributors. MIT-licensed."
+
+# ----------------------------------------------------------
+# Exclude
+# ----------------------------------------------------------
+exclude_docs: |
+  report/README.md
+  report/*.tex
+  report/*.bib
+  report/figures/*.dot
+  report/figures/*.py
+
+# ----------------------------------------------------------
+# Theme
+# ----------------------------------------------------------
+theme:
+  name: material
+  language: en
+  features:
+    - content.action.edit
+    - content.code.copy
+    - content.tabs.link
+    - navigation.expand
+    - navigation.indexes
+    - navigation.sections
+    - navigation.tabs
+    - navigation.top
+    - navigation.tracking
+    - search.highlight
+    - search.share
+    - search.suggest
+    - toc.follow
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: indigo
+      accent: blue
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: indigo
+      accent: blue
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  font:
+    text: Inter
+    code: JetBrains Mono
+  icon:
+    repo: fontawesome/brands/github
+    edit: material/pencil
+    view: material/eye
+
+# ----------------------------------------------------------
+# Plugins
+# ----------------------------------------------------------
+plugins:
+  - search
+  - tags
+
+# ----------------------------------------------------------
+# Markdown extensions
+# ----------------------------------------------------------
+markdown_extensions:
+  - admonition
+  - attr_list
+  - def_list
+  - footnotes
+  - md_in_html
+  - tables
+  - toc:
+      permalink: true
+  - pymdownx.details
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.tasklist:
+      custom_checkbox: true
+  - pymdownx.emoji:
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
+
+# ----------------------------------------------------------
+# Navigation
+# ----------------------------------------------------------
+nav:
+  - Home: index.md
+  - Architecture: architecture.md
+  - Roadmap: roadmap.md
+  - Quickstart: quickstart.md
+  - Modules:
+      - Overview: modules/index.md
+      - 1 · Ingestion: modules/ingestion.md
+      - 2 · Correlation (Brain): modules/correlation.md
+      - 3 · AI Assist: modules/ai-assist.md
+      - 4 · FP Handling: modules/fp-handling.md
+      - 5 · Cockpit: modules/cockpit.md
+      - 6 · Knowledge & Reporting: modules/reporting.md
+  - Planning:
+      - Feasibility analysis: planning/01-feasibility-report.md
+      - Final scope: planning/02-final-scope.md
+      - Build pathway: planning/03-build-pathway.md
+  - Phase-1 Report: report.md
+  - Contributing: contributing.md
+
+# ----------------------------------------------------------
+# Extra
+# ----------------------------------------------------------
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/whereisjojii/TR1NITY
+  generator: false

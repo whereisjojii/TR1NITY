@@ -1,7 +1,7 @@
 # Phase-1 Project Report
 
-**File:** [`tr1nity_report.pdf`](tr1nity_report.pdf)  
-**Authors:** Hamza, Irtaza, Hammad  
+**File:** [`tr1nity_report.pdf`](tr1nity_report.pdf)
+**Authors:** Hamza, Irtaza, Hammad
 **Course:** Network Security · Spring 2026 · Air University, Islamabad
 
 This is the academic-style Phase-1 documentation for TR1NITY. It mirrors the structure of a typical project-defense report:
