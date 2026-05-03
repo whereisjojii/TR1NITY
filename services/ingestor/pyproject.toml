@@ -15,7 +15,13 @@ extend-exclude = []
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "B", "UP", "N", "PT", "SIM"]
-ignore = []
+ignore = [
+  "B008",   # function-call-in-default-argument: required by FastAPI Depends()
+  "PT011",  # pytest.raises is intentionally broad — ValueError covers the contract
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["E501"]  # tolerate long lines in test fixtures/assertions
 
 [tool.pytest.ini_options]
 addopts = "-q"

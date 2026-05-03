@@ -1,0 +1,29 @@
+{
+  "timestamp": "2024-01-15T14:32:01.123+0000",
+  "rule": {
+    "level": 10,
+    "description": "sshd: Multiple authentication failures.",
+    "id": "5710",
+    "groups": ["authentication_failures", "syslog", "sshd"],
+    "mitre": {
+      "id": ["T1110"],
+      "tactic": ["Credential Access"],
+      "technique": ["Brute Force"]
+    }
+  },
+  "agent": {
+    "id": "001",
+    "name": "web-server-01",
+    "ip": "10.0.0.10"
+  },
+  "manager": { "name": "wazuh-manager" },
+  "id": "1547565121.123456",
+  "decoder": { "name": "sshd" },
+  "data": {
+    "srcip": "203.0.113.45",
+    "srcuser": "admin",
+    "dstuser": "root"
+  },
+  "location": "/var/log/auth.log",
+  "full_log": "Jan 15 14:32:01 web-server-01 sshd[12345]: Failed password for invalid user admin from 203.0.113.45 port 41234"
+}

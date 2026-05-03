@@ -50,7 +50,9 @@ clean: ## Stop the stack and DELETE all volumes (destructive)
 # ---------------- Demo / testing ----------------
 
 demo: ## Generate a synthetic Wazuh + firewall + WAF attack chain
-	@echo "[demo] not implemented yet. Coming in Phase 1."
+	@python3 scripts/demo/synth_attack.py \
+	    --base-url $${TR1NITY_INGESTOR_URL:-http://localhost:8001} \
+	    $${INGESTOR_AUTH_TOKEN:+--token $$INGESTOR_AUTH_TOKEN}
 
 test: ## Run unit tests across all services
 	@set -e; for svc in ingestor correlator ai-assist api; do \
