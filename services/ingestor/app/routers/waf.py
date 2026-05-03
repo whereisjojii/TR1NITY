@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-from typing import Any
-
 from fastapi import APIRouter, Body, Depends, HTTPException, status
 
 from ..config import get_settings
@@ -25,11 +23,11 @@ router = APIRouter(prefix="/ingest", tags=["ingest"])
     dependencies=[Depends(require_auth)],
 )
 async def ingest_waf(
-    body: Any = Body(...),  # noqa: B008
+    body: dict | list[dict] = Body(...),  # noqa: B008
     sink: EventSink = Depends(get_sink),  # noqa: B008
 ) -> dict[str, object]:
     settings = get_settings()
-    payloads: list[dict[str, Any]] = body if isinstance(body, list) else [body]
+    payloads: list[dict] = body if isinstance(body, list) else [body]
     if len(payloads) > settings.max_events_per_request:
         raise HTTPException(
             status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
@@ -37,7 +35,7 @@ async def ingest_waf(
         )
 
     parsed = []
-    parse_errors: list[dict[str, Any]] = []
+    parse_errors: list[dict[str, object]] = []
     for i, p in enumerate(payloads):
         try:
             parsed.append(modsec_parser.parse(p))

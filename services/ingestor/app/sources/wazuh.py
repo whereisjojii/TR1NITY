@@ -42,14 +42,25 @@ DATASET = "wazuh.alert"
 
 
 def _wazuh_level_to_severity(level: int) -> int:
-    """Map Wazuh rule.level (0-15) -> TR1NITY severity (0-4)."""
-    if level <= 3:
+    """Map Wazuh rule.level (0-15) -> TR1NITY internal severity (0-4).
+
+    Aligns with Wazuh's own rule classification semantics
+    (https://documentation.wazuh.com/current/user-manual/ruleset/rules/rules-classification.html)
+    and the table documented in ``docs/modules/ingestion.md``:
+
+        level 0       -> 0  informational
+        level 1-3     -> 1  low
+        level 4-7     -> 2  medium
+        level 8-11    -> 3  high
+        level 12-15   -> 4  critical
+    """
+    if level <= 0:
         return 0  # informational
-    if level <= 6:
+    if level <= 3:
         return 1  # low
-    if level <= 9:
+    if level <= 7:
         return 2  # medium
-    if level <= 12:
+    if level <= 11:
         return 3  # high
     return 4  # critical
 

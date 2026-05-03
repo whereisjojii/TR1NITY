@@ -38,7 +38,7 @@ class StdoutSink(EventSink):
         return result
 
     async def healthy(self) -> bool:
-        return not getattr(self._stream, "closed", False)
+        return not self._stream.closed
 
     async def close(self) -> None:
         # We intentionally do not close stdout/stderr.
