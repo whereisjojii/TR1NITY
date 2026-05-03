@@ -1,0 +1,13 @@
+# TR1NITY code ownership
+# Maintainers automatically requested for review on every PR.
+
+*                       @whereisjojii
+
+# Module-specific ownership (assignable when sub-maintainers join)
+/services/ingestor/     @whereisjojii
+/services/correlator/   @whereisjojii
+/services/ai-assist/    @whereisjojii
+/services/api/          @whereisjojii
+/ui/                    @whereisjojii
+/docs/                  @whereisjojii
+/deploy/                @whereisjojii

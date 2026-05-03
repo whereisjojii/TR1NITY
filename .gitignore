@@ -1,0 +1,134 @@
+# ============================================================
+# TR1NITY .gitignore
+# Aggressive: keeps the repo under 100 MB at v1.0
+# ============================================================
+
+# ---- Datasets (NEVER committed; pulled by scripts/download_datasets.sh) ----
+data/
+datasets/
+*.csv
+*.parquet
+*.h5
+*.hdf5
+CICIDS2017/
+UNSW-NB15/
+
+# ---- ML models (NEVER committed; published as GitHub Release assets) ----
+models/
+*.pkl
+*.joblib
+*.onnx
+*.pt
+*.pth
+*.bin
+*.gguf
+*.safetensors
+
+# ---- LLM weights (pulled via ollama / huggingface-cli) ----
+llm/
+ollama/
+.cache/huggingface/
+
+# ---- Threat-intel local DBs (auto-downloaded) ----
+*.mmdb
+GeoLite2-*.mmdb
+geoip/
+
+# ---- Wazuh / OpenSearch persistent state ----
+wazuh-data/
+opensearch-data/
+elasticsearch-data/
+
+# ---- Docker / Compose volumes ----
+docker-volumes/
+.docker/
+volumes/
+
+# ---- Python ----
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+.venv/
+venv/
+env/
+ENV/
+.eggs/
+*.egg-info/
+*.egg
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+.coverage.*
+htmlcov/
+.tox/
+.nox/
+build/
+dist/
+pip-wheel-metadata/
+
+# ---- Node / Frontend ----
+node_modules/
+.pnpm-store/
+ui/dist/
+ui/build/
+ui/.next/
+ui/.vite/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# ---- Editor / IDE ----
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# ---- Secrets / env ----
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+secrets/
+credentials.json
+
+# ---- LaTeX build artifacts (the source .tex stays, the build trash leaves) ----
+*.aux
+*.bbl
+*.bcf
+*.blg
+*.fdb_latexmk
+*.fls
+*.lof
+*.log
+*.lot
+*.nav
+*.out
+*.run.xml
+*.snm
+*.synctex.gz
+*.toc
+*.xdv
+docs/report/_build/
+docs/report/*.aux
+docs/report/*.log
+
+# ---- MkDocs build ----
+site/
+docs/_build/
+
+# ---- OS / temp ----
+*.tmp
+*.bak
+*.orig
+
+# ---- Generated diagrams (sources stay, large renders don't) ----
+# Keep .dot and .py sources; allow .pdf and .png up to the 10 MB pre-commit limit
