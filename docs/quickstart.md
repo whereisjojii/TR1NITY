@@ -47,16 +47,15 @@ make clean                 # ALSO delete volumes (destructive)
 
 ## What's where
 
-| Path | Purpose |
-|------|---------|
-| `services/<name>/` | One FastAPI service per module |
-| `deploy/docker-compose.yml` | The Phase-0 stack definition |
-| `Makefile` | All operator commands (`make help` for the full list) |
-| `docs/` | This documentation site (MkDocs Material) |
-| `docs/report/tr1nity_report.pdf` | Phase-1 academic report |
+| Path                        | Purpose                                               |
+| --------------------------- | ----------------------------------------------------- |
+| `services/<name>/`          | One FastAPI service per module                        |
+| `deploy/docker-compose.yml` | The Phase-0 stack definition                          |
+| `Makefile`                  | All operator commands (`make help` for the full list) |
+| `docs/`                     | This documentation site (MkDocs Material)             |
 
 ## Next steps
 
 - Read the [Architecture overview](architecture.md).
 - Browse the [Roadmap](roadmap.md).
-- Pick a phase from the [Build pathway](planning/03-build-pathway.md) and ship it.
+- Pick a [module](modules/index.md) and contribute.

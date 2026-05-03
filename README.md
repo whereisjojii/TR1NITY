@@ -17,7 +17,7 @@ _Three sources. One brain. One cockpit. Zero license cost._
 [![License: MIT](https://img.shields.io/badge/License-MIT-1976D2.svg)](LICENSE)
 [![Status: Phase 0](https://img.shields.io/badge/Status-Phase%200%20%E2%80%94%20Foundation-0D47A1)](ROADMAP.md)
 [![Open Source](https://img.shields.io/badge/100%25-Open%20Source-1565C0)](#license)
-[![No Paid APIs](https://img.shields.io/badge/Paid%20APIs-0-0D47A1)](docs/planning/03-build-pathway.md)
+[![No Paid APIs](https://img.shields.io/badge/Paid%20APIs-0-0D47A1)](#zero-paid-apis)
 [![Built for SOC Analysts](https://img.shields.io/badge/Built%20for-SOC%20Analysts-1976D2)](#-the-problem)
 
 </div>
@@ -40,7 +40,7 @@ Most open-source SOC stacks today force the analyst to manually stitch evidence 
 - A **firewall log** (iptables records the offending IP),
 - A **HIDS alert** (Wazuh detects the post-exploit file integrity change).
 
-Without unified correlation, those three signals appear as **three independent low-fidelity alerts** in three independent dashboards. Industry research links this fragmentation to **71% analyst burnout** and **~80% of analyst time spent on low-fidelity alerts** ([sources](docs/report/tr1nity_report.pdf)).
+Without unified correlation, those three signals appear as **three independent low-fidelity alerts** in three independent dashboards. Industry research links this fragmentation to high analyst burnout and a large share of analyst time spent on low-fidelity alerts.
 
 TR1NITY collapses those three signals into **one incident document** with full kill-chain reconstruction, threat-intel enrichment, ATT&CK mapping, and an AI-drafted post-incident report — all on commodity hardware, with zero recurring cost.
 
@@ -57,7 +57,7 @@ TR1NITY collapses those three signals into **one incident document** with full k
 | **M5** | Analyst Workstation ("The Cockpit")    | React + Tailwind + shadcn/ui single-pane investigation UI with ATT&CK heatmap and similar-incidents search  | Phase 3 |
 | **M6** | Knowledge, Audit & Reporting           | 15+ runbooks, audit trail, compliance PDFs (PCI-DSS / ISO 27001 / NIST CSF), weekly metrics, backup/restore | Phase 6 |
 
-Detailed module specs: [`ARCHITECTURE.md`](ARCHITECTURE.md) · [`ROADMAP.md`](ROADMAP.md) · [Phase-1 Report (PDF)](docs/report/tr1nity_report.pdf)
+Detailed module specs: [`ARCHITECTURE.md`](ARCHITECTURE.md) · [`ROADMAP.md`](ROADMAP.md)
 
 ---
 
@@ -110,13 +110,10 @@ Net recurring cost to run TR1NITY: **$0**.
 
 ## Documentation
 
-- **[`docs/report/tr1nity_report.pdf`](docs/report/tr1nity_report.pdf)** — Phase-1 academic-style project report (architecture, lit review, use cases, test cases, market value, Gantt chart, IEEE references).
-- **[`docs/planning/01-feasibility-report.md`](docs/planning/01-feasibility-report.md)** — Hardware feasibility analysis.
-- **[`docs/planning/02-final-scope.md`](docs/planning/02-final-scope.md)** — Opinionated scope cuts (what was removed and why).
-- **[`docs/planning/03-build-pathway.md`](docs/planning/03-build-pathway.md)** — 16-week step-by-step build plan.
 - **[`ARCHITECTURE.md`](ARCHITECTURE.md)** — High-level architecture and component design.
 - **[`ROADMAP.md`](ROADMAP.md)** — Phase-by-phase delivery plan with milestone tags.
 - **[`CONTRIBUTING.md`](CONTRIBUTING.md)** — How to set up the dev env and contribute.
+- **[`docs/`](docs/)** — Full MkDocs Material site (`make docs-serve` to preview at http://127.0.0.1:8000).
 
 ---
 
@@ -134,19 +131,9 @@ Net recurring cost to run TR1NITY: **$0**.
 
 ---
 
-## Authors
-
-- **Hamza**
-- **Irtaza**
-- **Hammad**
-
-Department of Cyber Security · Air University, Islamabad · Network Security · Spring 2026.
-
----
-
 ## License
 
-TR1NITY is released under the [MIT License](LICENSE). It depends on third-party components under their own permissive licenses (Apache 2.0, GPLv2, MIT, DRL); see individual submodules and `docs/planning/03-build-pathway.md` for the full attribution table.
+TR1NITY is released under the [MIT License](LICENSE). It depends on third-party components under their own permissive licenses (Apache 2.0, GPLv2, MIT, DRL).
 
 ---
 

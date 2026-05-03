@@ -43,7 +43,7 @@ Authored from the Cockpit, with TTL and audit trail. Examples:
     url.path: "/healthcheck"
   fp_score: 1.0
   ttl_days: 30
-  author: "hammad@air.edu.pk"
+  author: "analyst@example.com"
   reason: "Health probes from internal monitoring; safe to suppress for 30 days."
 ```
 

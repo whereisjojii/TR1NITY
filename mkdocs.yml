@@ -1,21 +1,16 @@
 site_name: TR1NITY
 site_description: Unified SIEM Correlation Platform for Wazuh, Firewall, and WAF Logs
-site_author: Hamza, Irtaza, Hammad
 site_url: https://whereisjojii.github.io/TR1NITY/
 repo_url: https://github.com/whereisjojii/TR1NITY
 repo_name: whereisjojii/TR1NITY
 edit_uri: edit/main/docs/
-copyright: "&copy; 2026 Hamza, Irtaza, Hammad — TR1NITY contributors. MIT-licensed."
+copyright: "&copy; 2026 TR1NITY contributors. MIT-licensed."
 
 # ----------------------------------------------------------
 # Exclude
 # ----------------------------------------------------------
 exclude_docs: |
-  report/README.md
-  report/*.tex
-  report/*.bib
-  report/figures/*.dot
-  report/figures/*.py
+  contributing.md
 
 # ----------------------------------------------------------
 # Theme
@@ -98,10 +93,11 @@ markdown_extensions:
   - pymdownx.emoji:
       emoji_index: !!python/name:material.extensions.emoji.twemoji
       emoji_generator: !!python/name:material.extensions.emoji.to_svg
+        # ----------------------------------------------------------
+        # Navigation
+        # ----------------------------------------------------------
 
-# ----------------------------------------------------------
-# Navigation
-# ----------------------------------------------------------
+
 nav:
   - Home: index.md
   - Architecture: architecture.md
@@ -115,12 +111,6 @@ nav:
       - 4 · FP Handling: modules/fp-handling.md
       - 5 · Cockpit: modules/cockpit.md
       - 6 · Knowledge & Reporting: modules/reporting.md
-  - Planning:
-      - Feasibility analysis: planning/01-feasibility-report.md
-      - Final scope: planning/02-final-scope.md
-      - Build pathway: planning/03-build-pathway.md
-  - Phase-1 Report: report.md
-  - Contributing: contributing.md
 
 # ----------------------------------------------------------
 # Extra

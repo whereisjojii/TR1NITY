@@ -24,13 +24,13 @@ Operators can edit, add, or override runbooks; all edits are versioned in Postgr
 
 Every analyst action is journaled:
 
-| Field | Example |
-|-------|---------|
-| `actor` | hammad@air.edu.pk |
-| `action` | `incident.mark_fp` |
-| `target` | `incident-2026-05-03-3829` |
-| `before` / `after` | JSON diffs |
-| `timestamp` | UTC, monotonic |
+| Field              | Example                    |
+| ------------------ | -------------------------- |
+| `actor`            | analyst@example.com        |
+| `action`           | `incident.mark_fp`         |
+| `target`           | `incident-2026-05-03-3829` |
+| `before` / `after` | JSON diffs                 |
+| `timestamp`        | UTC, monotonic             |
 
 The journal is append-only and is included in compliance PDF exports.
 

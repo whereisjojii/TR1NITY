@@ -44,9 +44,9 @@ services:
       memlock: { soft: -1, hard: -1 }
       nofile: { soft: 655360, hard: 655360 }
     ports:
-      - "1514:1514/udp"   # syslog
-      - "1515:1515"       # agent registration
-      - "55000:55000"     # API
+      - "1514:1514/udp" # syslog
+      - "1515:1515" # agent registration
+      - "55000:55000" # API
     volumes:
       - wazuh-manager-config:/var/ossec/etc
       - wazuh-manager-logs:/var/ossec/logs
@@ -82,7 +82,11 @@ services:
     volumes:
       - wazuh-indexer-data:/var/lib/wazuh-indexer
     healthcheck:
-      test: ["CMD-SHELL", "curl -sk -u admin:${OPENSEARCH_PASSWORD:-ChangeMeAtFirstBoot!} https://localhost:9200/_cluster/health | grep -E 'green|yellow' || exit 1"]
+      test:
+        [
+          "CMD-SHELL",
+          "curl -sk -u admin:${OPENSEARCH_PASSWORD:-ChangeMeAtFirstBoot!} https://localhost:9200/_cluster/health | grep -E 'green|yellow' || exit 1",
+        ]
       interval: 30s
       timeout: 10s
       retries: 10
@@ -106,7 +110,11 @@ services:
     volumes:
       - postgres-data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER:-tr1nity} -d $${POSTGRES_DB:-tr1nity}"]
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U $${POSTGRES_USER:-tr1nity} -d $${POSTGRES_DB:-tr1nity}",
+        ]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -155,7 +163,13 @@ services:
     ports:
       - "${TR1NITY_INGESTOR_PORT:-8001}:8001"
     healthcheck:
-      test: ["CMD", "python", "-c", "import urllib.request,sys; r=urllib.request.urlopen('http://localhost:8001/healthz', timeout=3); sys.exit(0 if r.status==200 else 1)"]
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request,sys; r=urllib.request.urlopen('http://localhost:8001/healthz', timeout=3); sys.exit(0 if r.status==200 else 1)",
+        ]
       interval: 30s
       timeout: 5s
       retries: 5
@@ -187,7 +201,13 @@ services:
       postgres:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "python", "-c", "import urllib.request,sys; r=urllib.request.urlopen('http://localhost:8002/healthz', timeout=3); sys.exit(0 if r.status==200 else 1)"]
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request,sys; r=urllib.request.urlopen('http://localhost:8002/healthz', timeout=3); sys.exit(0 if r.status==200 else 1)",
+        ]
       interval: 30s
       timeout: 5s
       retries: 5
@@ -211,7 +231,13 @@ services:
     ports:
       - "${TR1NITY_AI_ASSIST_PORT:-8003}:8003"
     healthcheck:
-      test: ["CMD", "python", "-c", "import urllib.request,sys; r=urllib.request.urlopen('http://localhost:8003/healthz', timeout=3); sys.exit(0 if r.status==200 else 1)"]
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request,sys; r=urllib.request.urlopen('http://localhost:8003/healthz', timeout=3); sys.exit(0 if r.status==200 else 1)",
+        ]
       interval: 30s
       timeout: 5s
       retries: 5
@@ -241,7 +267,13 @@ services:
       ai-assist:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "python", "-c", "import urllib.request,sys; r=urllib.request.urlopen('http://localhost:8000/healthz', timeout=3); sys.exit(0 if r.status==200 else 1)"]
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request,sys; r=urllib.request.urlopen('http://localhost:8000/healthz', timeout=3); sys.exit(0 if r.status==200 else 1)",
+        ]
       interval: 30s
       timeout: 5s
       retries: 5

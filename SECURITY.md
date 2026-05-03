@@ -4,13 +4,7 @@
 
 **Please do not open a public GitHub issue for security vulnerabilities.**
 
-Instead, email the maintainers privately at one of:
-
-- **Hamza** — _(contact via repo owner)_
-- **Irtaza** — _(contact via repo owner)_
-- **Hammad** — _(contact via repo owner)_
-
-You can also use GitHub's [private security advisory](https://github.com/whereisjojii/TR1NITY/security/advisories/new) flow.
+Instead, use GitHub's [private security advisory](https://github.com/whereisjojii/TR1NITY/security/advisories/new) flow. Reports submitted through that channel are visible only to repository maintainers until a fix is published.
 
 We aim to:
 

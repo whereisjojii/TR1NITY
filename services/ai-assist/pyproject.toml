@@ -5,11 +5,7 @@ description = "TR1NITY ai-assist service — Phase 0"
 readme = "README.md"
 requires-python = ">=3.11"
 license = { text = "MIT" }
-authors = [
-    { name = "Hamza" },
-    { name = "Irtaza" },
-    { name = "Hammad" },
-]
+authors = [{ name = "TR1NITY contributors" }]
 
 [tool.ruff]
 target-version = "py311"

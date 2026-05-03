@@ -1,36 +1,30 @@
 # Architecture
 
-This page is a living summary of the TR1NITY architecture. The authoritative reference is the [Phase-1 PDF report](report.md), which includes the full citation set and rendered diagrams.
-
-For the version-controlled architecture document, see the [`ARCHITECTURE.md`](https://github.com/whereisjojii/TR1NITY/blob/main/ARCHITECTURE.md) at the repo root.
-
-## High-level diagram
-
-![TR1NITY architecture diagram](report/figures/architecture.png){ loading=lazy }
+This page is a living summary of the TR1NITY architecture. The version-controlled architecture document is [`ARCHITECTURE.md`](https://github.com/whereisjojii/TR1NITY/blob/main/ARCHITECTURE.md) at the repo root.
 
 ## The six modules
 
-| # | Module | Tech | Phase |
-|---|--------|------|-------|
-| **M1** | Ingestion & Normalization | FastAPI + Filebeat + ECS schema | 1 |
-| **M2** | Correlation & Enrichment | FastAPI + asyncio + pySigma | 2 |
-| **M3** | AI Assist (HITL) | `llama.cpp` + Vulkan + Foundation-Sec-8B Q4 | 5 |
-| **M4** | False-Positive Handling | scikit-learn + YAML whitelists | 4 |
-| **M5** | Analyst Workstation | React + Tailwind + shadcn/ui | 3 |
-| **M6** | Knowledge, Audit & Reporting | WeasyPrint + PostgreSQL + cron | 6 |
+| #      | Module                       | Tech                                        | Phase |
+| ------ | ---------------------------- | ------------------------------------------- | ----- |
+| **M1** | Ingestion & Normalization    | FastAPI + Filebeat + ECS schema             | 1     |
+| **M2** | Correlation & Enrichment     | FastAPI + asyncio + pySigma                 | 2     |
+| **M3** | AI Assist (HITL)             | `llama.cpp` + Vulkan + Foundation-Sec-8B Q4 | 5     |
+| **M4** | False-Positive Handling      | scikit-learn + YAML whitelists              | 4     |
+| **M5** | Analyst Workstation          | React + Tailwind + shadcn/ui                | 3     |
+| **M6** | Knowledge, Audit & Reporting | WeasyPrint + PostgreSQL + cron              | 6     |
 
 ## Service inventory
 
-| Service | Port | Purpose |
-|---------|------|---------|
-| `wazuh-manager` | 1514, 1515, 55000 | HIDS server |
-| `wazuh-indexer` | 9200 | Event store (OpenSearch fork) |
-| `postgres` | 5432 | Cases, audit, FP feedback, runbook history |
-| `chromadb` | 8004 | Vector store for RAG |
-| `ingestor` | 8001 | Webhook + syslog + ModSecurity → ECS |
-| `correlator` | 8002 | Periodic correlation loop |
-| `ai-assist` | 8003 | Async drafting service |
-| `api` | 8000 | Public REST + WebSocket |
+| Service         | Port              | Purpose                                    |
+| --------------- | ----------------- | ------------------------------------------ |
+| `wazuh-manager` | 1514, 1515, 55000 | HIDS server                                |
+| `wazuh-indexer` | 9200              | Event store (OpenSearch fork)              |
+| `postgres`      | 5432              | Cases, audit, FP feedback, runbook history |
+| `chromadb`      | 8004              | Vector store for RAG                       |
+| `ingestor`      | 8001              | Webhook + syslog + ModSecurity → ECS       |
+| `correlator`    | 8002              | Periodic correlation loop                  |
+| `ai-assist`     | 8003              | Async drafting service                     |
+| `api`           | 8000              | Public REST + WebSocket                    |
 
 Total RAM at full tilt: ~9 GB. Headroom on a 16 GB host: ~7 GB.
 
@@ -47,7 +41,7 @@ Total RAM at full tilt: ~9 GB. Headroom on a 16 GB host: ~7 GB.
 
 ## What's deliberately not here
 
-See [`docs/planning/02-final-scope.md`](planning/02-final-scope.md) for the rationale on these cuts:
+The following items were considered and explicitly cut to keep the v1.0 scope shippable on commodity hardware:
 
 - No multi-class network-flow ML on production traffic.
 - No self-rewriting SIGMA rule generator.

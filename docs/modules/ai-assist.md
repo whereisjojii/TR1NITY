@@ -8,7 +8,7 @@ Generate the **boring documents an analyst doesn't want to write** — post-inci
 
 ## Why HITL, not autonomous
 
-Real analyst feedback (and the empirical findings cited in the [Phase-1 report](../report.md)) is consistent: AI is *useful* on async drafting tasks and *unreliable* on real-time triage. TR1NITY hard-codes that boundary:
+Real analyst feedback is consistent: AI is _useful_ on async drafting tasks and _unreliable_ on real-time triage. TR1NITY hard-codes that boundary:
 
 - The LLM **never** decides whether something is a true positive.
 - The LLM **never** auto-closes a case.
@@ -16,21 +16,21 @@ Real analyst feedback (and the empirical findings cited in the [Phase-1 report](
 
 ## Stack
 
-| Component | Choice | Rationale |
-|-----------|--------|-----------|
-| Model | Foundation-Sec-8B-Instruct (Apache 2.0) | Security-specialized, ≈70B-class quality, 8B params |
-| Quantization | Q4_K_M GGUF (~5 GB) | Fits in 8 GB VRAM with headroom |
-| Runtime | `llama.cpp` | Mature, fast, CPU/GPU/Vulkan flexibility |
-| Backend on RX 590 | Vulkan | ROCm dropped Polaris; Vulkan works fine |
-| RAG | ChromaDB (in-process) | No extra server, persistent on disk |
+| Component         | Choice                                  | Rationale                                           |
+| ----------------- | --------------------------------------- | --------------------------------------------------- |
+| Model             | Foundation-Sec-8B-Instruct (Apache 2.0) | Security-specialized, ≈70B-class quality, 8B params |
+| Quantization      | Q4_K_M GGUF (~5 GB)                     | Fits in 8 GB VRAM with headroom                     |
+| Runtime           | `llama.cpp`                             | Mature, fast, CPU/GPU/Vulkan flexibility            |
+| Backend on RX 590 | Vulkan                                  | ROCm dropped Polaris; Vulkan works fine             |
+| RAG               | ChromaDB (in-process)                   | No extra server, persistent on disk                 |
 
 ## Drafting endpoints (Phase 5)
 
-| Endpoint | Drafts |
-|----------|--------|
-| `POST /draft/incident-report` | Markdown post-mortem grounded by the closed case |
-| `POST /draft/runbook` | Runbook for a specific ATT&CK technique |
-| `POST /draft/cve-explanation` | Plain-English CVE summary using NVD context |
+| Endpoint                        | Drafts                                                     |
+| ------------------------------- | ---------------------------------------------------------- |
+| `POST /draft/incident-report`   | Markdown post-mortem grounded by the closed case           |
+| `POST /draft/runbook`           | Runbook for a specific ATT&CK technique                    |
+| `POST /draft/cve-explanation`   | Plain-English CVE summary using NVD context                |
 | `POST /draft/weekly-compliance` | Weekly compliance summary (PCI-DSS / ISO 27001 / NIST CSF) |
 
 All drafts are queued asynchronously; the UI shows a "Draft ready" badge when complete.

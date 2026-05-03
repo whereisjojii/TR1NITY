@@ -2,7 +2,7 @@
 
 > **TL;DR** — Three log streams (Wazuh, firewall, WAF) → one normalized OpenSearch index (`tr1nity-events-*`) → correlation engine ("The Brain") → analyst cockpit (React) → optional AI-drafted reports (Foundation-Sec-8B). Six modules, four FastAPI services, one Docker Compose file.
 
-For the academic-style version of this document with citations and Gantt chart, see [`docs/report/tr1nity_report.pdf`](docs/report/tr1nity_report.pdf).
+This document is the authoritative architecture reference for the project.
 
 ---
 
@@ -58,8 +58,6 @@ For the academic-style version of this document with citations and Gantt chart, 
                           └────────────────────────────────┘
 ```
 
-A rendered, blue-themed PDF version of this diagram is included in the Phase-1 report on page 9.
-
 ---
 
 ## Service inventory (Phase 0 → v1.0)
@@ -113,7 +111,7 @@ Total RAM at full tilt: ~9 GB (Wazuh manager + indexer ~3 GB + Foundation-Sec-8B
 
 ## What's deliberately not here
 
-For the rationale on these cuts, see [`docs/planning/02-final-scope.md`](docs/planning/02-final-scope.md):
+Items deliberately cut to keep v1.0 shippable on commodity hardware:
 
 - No multi-class network-flow ML on production traffic (CICIDS2017-style).
 - No self-rewriting SIGMA rule generator.
@@ -126,6 +124,5 @@ For the rationale on these cuts, see [`docs/planning/02-final-scope.md`](docs/pl
 
 ## Pointers
 
-- Per-module deep dives: [`docs/planning/03-build-pathway.md`](docs/planning/03-build-pathway.md).
+- Per-module deep dives: [`docs/modules/`](docs/modules/index.md).
 - Phase-by-phase delivery plan: [`ROADMAP.md`](ROADMAP.md).
-- Use cases, test cases, market value, citations: [`docs/report/tr1nity_report.pdf`](docs/report/tr1nity_report.pdf).

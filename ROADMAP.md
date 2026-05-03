@@ -2,7 +2,7 @@
 
 > **Cadence beats perfection.** Every phase ends with a tagged release and a runnable `make` command. Worst-case, an early phase still ships value.
 
-The full week-by-week breakdown is in [`docs/planning/03-build-pathway.md`](docs/planning/03-build-pathway.md). This file is the short scoreboard.
+This file is the short, version-controlled scoreboard for the build.
 
 ---
 

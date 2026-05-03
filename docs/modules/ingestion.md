@@ -8,13 +8,13 @@ Receive events from the three core defensive log sources — Wazuh, firewalls, W
 
 ## Sources
 
-| Source | Transport | Format | Parser |
-|--------|-----------|--------|--------|
-| Wazuh | HTTP webhook (Wazuh integration) | Wazuh JSON | `app.parsers.wazuh` |
-| Firewall (iptables) | UDP 514 syslog | iptables log line | `app.parsers.iptables` |
-| Firewall (pfSense / OPNsense) | UDP 514 syslog | filterlog | `app.parsers.pfsense` |
-| WAF (ModSecurity + OWASP CRS) | Filebeat / syslog | JSON or CEF | `app.parsers.modsecurity` |
-| Suricata (optional) | EVE JSON tail | EVE | `app.parsers.suricata` |
+| Source                        | Transport                        | Format            | Parser                    |
+| ----------------------------- | -------------------------------- | ----------------- | ------------------------- |
+| Wazuh                         | HTTP webhook (Wazuh integration) | Wazuh JSON        | `app.parsers.wazuh`       |
+| Firewall (iptables)           | UDP 514 syslog                   | iptables log line | `app.parsers.iptables`    |
+| Firewall (pfSense / OPNsense) | UDP 514 syslog                   | filterlog         | `app.parsers.pfsense`     |
+| WAF (ModSecurity + OWASP CRS) | Filebeat / syslog                | JSON or CEF       | `app.parsers.modsecurity` |
+| Suricata (optional)           | EVE JSON tail                    | EVE               | `app.parsers.suricata`    |
 
 ## ECS shape
 
@@ -26,16 +26,16 @@ Every parser produces a document with at minimum:
   "event": {
     "module": "wazuh|iptables|pfsense|modsecurity|suricata",
     "category": ["intrusion_detection"],
-    "type":     ["alert"],
+    "type": ["alert"],
     "severity": 7,
-    "action":   "blocked|alerted|denied"
+    "action": "blocked|alerted|denied"
   },
-  "source":      { "ip": "203.0.113.5", "port": 51234 },
-  "destination": { "ip": "10.0.0.42",   "port": 22 },
-  "host":        { "name": "web-prod-1" },
-  "user":        { "name": "root" },
-  "threat":      { "tactic": "...", "technique": { "id": "T1110.001" } },
-  "tr1nity":     { "raw": "...original payload, untouched..." }
+  "source": { "ip": "203.0.113.5", "port": 51234 },
+  "destination": { "ip": "10.0.0.42", "port": 22 },
+  "host": { "name": "web-prod-1" },
+  "user": { "name": "root" },
+  "threat": { "tactic": "...", "technique": { "id": "T1110.001" } },
+  "tr1nity": { "raw": "...original payload, untouched..." }
 }
 ```
 
@@ -43,12 +43,12 @@ Every parser produces a document with at minimum:
 
 `tr1nity-events-*` follows an ISM (Index State Management) policy:
 
-| State | Default | Purpose |
-|-------|---------|---------|
-| Hot | 7 d | Active queries, fast disk |
-| Warm | 30 d | Older queries, slower disk |
-| Cold (closed) | 90 d | Compliance retention |
-| Delete | 180 d | Final purge |
+| State         | Default | Purpose                    |
+| ------------- | ------- | -------------------------- |
+| Hot           | 7 d     | Active queries, fast disk  |
+| Warm          | 30 d    | Older queries, slower disk |
+| Cold (closed) | 90 d    | Compliance retention       |
+| Delete        | 180 d   | Final purge                |
 
 All thresholds are operator-overridable via env vars.
 

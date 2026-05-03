@@ -4,7 +4,7 @@
 
 ## Goal
 
-Turn raw events into a small, ordered queue of high-fidelity *incidents* with full kill-chain context, ATT&CK technique mapping, and threat-intel enrichment baked in — so the analyst never opens a second tool to make a verdict.
+Turn raw events into a small, ordered queue of high-fidelity _incidents_ with full kill-chain context, ATT&CK technique mapping, and threat-intel enrichment baked in — so the analyst never opens a second tool to make a verdict.
 
 ## Pipeline
 
@@ -21,24 +21,24 @@ Every 30 seconds:
 
 ## ATT&CK mapping
 
-| Source | Mapping strategy |
-|--------|-------------------|
-| Wazuh | Wazuh's native `rule.mitre` field |
+| Source             | Mapping strategy                                                |
+| ------------------ | --------------------------------------------------------------- |
+| Wazuh              | Wazuh's native `rule.mitre` field                               |
 | iptables / pfSense | Static rule-to-technique map (e.g., dropped TCP 22 → T1110.001) |
-| ModSecurity | OWASP CRS rule ID → technique map |
-| Suricata | Suricata classtype → technique map |
+| ModSecurity        | OWASP CRS rule ID → technique map                               |
+| Suricata           | Suricata classtype → technique map                              |
 
 For the long tail, we lean on **SIGMA** rules translated via `pySigma` to the OpenSearch DSL.
 
 ## Threat intelligence (free tier only)
 
-| Source | Limit | Cache TTL |
-|--------|-------|-----------|
-| AbuseIPDB | 1,000 IP checks/day | 24 h |
-| AlienVault OTX | rate-limited per minute | 24 h |
-| NVD CVE API v2 | 50 req/30 s with key | 7 d |
-| abuse.ch (MalwareBazaar / URLhaus / ThreatFox) | reasonable use | 24 h |
-| MaxMind GeoLite2 | monthly DB pull | n/a (local DB) |
+| Source                                         | Limit                   | Cache TTL      |
+| ---------------------------------------------- | ----------------------- | -------------- |
+| AbuseIPDB                                      | 1,000 IP checks/day     | 24 h           |
+| AlienVault OTX                                 | rate-limited per minute | 24 h           |
+| NVD CVE API v2                                 | 50 req/30 s with key    | 7 d            |
+| abuse.ch (MalwareBazaar / URLhaus / ThreatFox) | reasonable use          | 24 h           |
+| MaxMind GeoLite2                               | monthly DB pull         | n/a (local DB) |
 
 ## SIGMA rule manager
 
