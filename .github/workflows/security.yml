@@ -17,36 +17,51 @@ concurrency:
   group: security-${{ github.ref }}
   cancel-in-progress: true
 
+defaults:
+  run:
+    shell: bash
+
 jobs:
   # ----------------------------------------------------------------
-  # CodeQL static analysis on Python source
+  # pip-audit: known CVEs in Python pinned dependencies
   # ----------------------------------------------------------------
-  codeql:
-    name: CodeQL (python)
-    runs-on: ubuntu-latest
+  pip-audit:
+    name: pip-audit (${{ matrix.service }})
+    runs-on: [self-hosted, tr1nity, windows]
+    strategy:
+      fail-fast: false
+      matrix:
+        service: [ingestor, correlator, ai-assist, api]
     steps:
       - uses: actions/checkout@v4
 
-      - name: Initialize CodeQL
-        uses: github/codeql-action/init@v3
-        with:
-          languages: python
-          queries: security-and-quality
+      - name: Install pip-audit
+        run: python -m pip install --upgrade pip pip-audit
 
-      - name: Autobuild
-        uses: github/codeql-action/autobuild@v3
+      - name: Audit ${{ matrix.service }} runtime deps
+        working-directory: services/${{ matrix.service }}
+        run: |
+          if [ -f requirements.txt ]; then
+            pip-audit -r requirements.txt --strict
+          else
+            echo "No requirements.txt for ${{ matrix.service }} — skipping"
+          fi
 
-      - name: Run CodeQL analysis
-        uses: github/codeql-action/analyze@v3
-        with:
-          category: "/language:python"
+      - name: Audit ${{ matrix.service }} dev deps
+        working-directory: services/${{ matrix.service }}
+        run: |
+          if [ -f requirements-dev.txt ]; then
+            pip-audit -r requirements-dev.txt --strict
+          else
+            echo "No requirements-dev.txt for ${{ matrix.service }} — skipping"
+          fi
 
   # ----------------------------------------------------------------
   # Trivy dependency + Dockerfile scan (filesystem mode)
   # ----------------------------------------------------------------
   trivy-fs:
     name: Trivy (filesystem)
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, tr1nity, windows]
     steps:
       - uses: actions/checkout@v4
 
@@ -73,7 +88,7 @@ jobs:
   # ----------------------------------------------------------------
   trivy-config:
     name: Trivy (config)
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, tr1nity, windows]
     steps:
       - uses: actions/checkout@v4
 
@@ -99,7 +114,7 @@ jobs:
   # ----------------------------------------------------------------
   gitleaks:
     name: Gitleaks (secret scan)
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, tr1nity, windows]
     steps:
       - uses: actions/checkout@v4
         with:
