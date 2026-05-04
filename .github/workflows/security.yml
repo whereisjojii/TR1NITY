@@ -19,7 +19,9 @@ concurrency:
 
 defaults:
   run:
-    shell: bash
+    # Force Git Bash explicitly — Windows runners with WSL2 (Docker Desktop) resolve
+    # `shell: bash` to WSL's bash.EXE which cannot access D:\ paths or Windows Python.
+    shell: 'C:\Program Files\Git\bin\bash.EXE --noprofile --norc -eo pipefail {0}'
 
 jobs:
   # ----------------------------------------------------------------
