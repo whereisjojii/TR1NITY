@@ -55,7 +55,9 @@ def step_firewall(base: str, token: str | None) -> tuple[int, str]:
         "TTL=54 ID=12345 DF PROTO=TCP SPT=41234 DPT=22 WINDOW=29200 "
         "RES=0x00 SYN URGP=0"
     )
-    return post_json(f"{base}/ingest/syslog", {"lines": [line], "host": "fw-edge"}, token)
+    return post_json(
+        f"{base}/ingest/syslog", {"lines": [line], "host": "fw-edge"}, token
+    )
 
 
 def step_waf(base: str, token: str | None) -> tuple[int, str]:
@@ -89,9 +91,9 @@ def step_waf(base: str, token: str | None) -> tuple[int, str]:
 def step_wazuh(base: str, token: str | None) -> tuple[int, str]:
     """Step 3: Wazuh sees brute-force on SSH from same IP."""
     payload = {
-        "timestamp": datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%S.%f%z").replace(
-            "+0000", "+00:00"
-        ),
+        "timestamp": datetime.now(UTC)
+        .strftime("%Y-%m-%dT%H:%M:%S.%f%z")
+        .replace("+0000", "+00:00"),
         "rule": {
             "level": 10,
             "description": "sshd: Multiple authentication failures.",
