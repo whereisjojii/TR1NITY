@@ -1,0 +1,19 @@
+{
+  "_comment": "TR1NITY-bundled starter IOC list. Operators replace this with their own snapshot of any free feed (abuse.ch URLhaus, SANS ISC, Spamhaus DROP, etc.). Documentation-only IPs/domains kept here so tests and the demo flow always show at least one intel hit.",
+  "ips": {
+    "203.0.113.45": {
+      "feed": "tr1nity-bundled",
+      "tags": ["docs-test-net", "scanner-demo"],
+      "description": "TEST-NET-3 documentation IP used in synth_attack.py demo",
+      "confidence": 100
+    }
+  },
+  "domains": {
+    "evil.example.com": {
+      "feed": "tr1nity-bundled",
+      "tags": ["c2-demo", "rfc-2606"],
+      "description": "RFC-2606 documentation domain — demo only",
+      "confidence": 100
+    }
+  }
+}

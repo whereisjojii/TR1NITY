@@ -191,7 +191,7 @@ services:
     environment:
       <<: *common-env
       DRY_RUN: ${CORRELATOR_DRY_RUN:-true}
-      OPENSEARCH_URL: ${OPENSEARCH_URL:-http://wazuh-indexer:9200}
+      OPENSEARCH_URL: ${OPENSEARCH_URL:-https://wazuh-indexer:9200}
       OPENSEARCH_USERNAME: ${OPENSEARCH_USERNAME:-admin}
       OPENSEARCH_PASSWORD: ${OPENSEARCH_PASSWORD:-ChangeMeAtFirstBoot!}
       OPENSEARCH_VERIFY_TLS: "false"

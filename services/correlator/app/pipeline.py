@@ -165,9 +165,11 @@ class CorrelatorPipeline:
         # SIGMA matches — gather the ones we stamped onto member events.
         sigma_seen: set[str] = set(incident.sigma_matches)
         for member in incident.members:
-            for rid in getattr(member, "technique_ids", []):
+            for rid in member.sigma_matches:
                 if rid in sigma_seen:
                     continue
+                sigma_seen.add(rid)
+                incident.sigma_matches.append(rid)
 
         # Intel — IPs only for now (domains will land when DNS-flavored
         # parsers ship in a later phase).

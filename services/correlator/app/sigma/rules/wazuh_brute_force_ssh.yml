@@ -20,5 +20,5 @@ detection:
   selection_group:
     rule.category|contains: authentication_failures
   selection_level:
-    rule.id|startswith: "55"  # Wazuh SSH brute-force rules live in the 5500-5800 range
+    rule.id|startswith: "55" # Wazuh SSH brute-force rules live in the 5500-5800 range
   condition: selection_source and (selection_group or selection_level)

@@ -98,6 +98,16 @@ def _event_tactics(event: dict[str, Any]) -> list[str]:
     return out
 
 
+def _event_sigma_matches(event: dict[str, Any]) -> list[str]:
+    tr = event.get("tr1nity") or {}
+    if not isinstance(tr, dict):
+        return []
+    matches = tr.get("sigma_matches") or []
+    if not isinstance(matches, list):
+        return []
+    return [str(m) for m in matches if isinstance(m, str) and m]
+
+
 def _to_member(event: dict[str, Any]) -> IncidentMember | None:
     """Promote one ECS event dict to an IncidentMember."""
     ts = event_timestamp(event)
@@ -119,6 +129,7 @@ def _to_member(event: dict[str, Any]) -> IncidentMember | None:
         user=user.get("name") if isinstance(user, dict) else None,
         message=event.get("message"),
         technique_ids=_event_techniques(event),
+        sigma_matches=_event_sigma_matches(event),
     )
 
 

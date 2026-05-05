@@ -32,7 +32,7 @@ class CorrelatorSettings(BaseSettings):
     tr1nity_env: str = Field(default="dev", description="Deployment env label")
 
     # OpenSearch wiring (shared with ingestor in production)
-    opensearch_url: str = "http://wazuh-indexer:9200"
+    opensearch_url: str = "https://wazuh-indexer:9200"
     opensearch_username: str = ""
     opensearch_password: SecretStr = SecretStr("")
     opensearch_verify_tls: bool = True

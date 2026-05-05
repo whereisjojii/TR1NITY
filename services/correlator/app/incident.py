@@ -62,6 +62,7 @@ class IncidentMember(BaseModel):
     user: str | None = None
     message: str | None = None
     technique_ids: list[str] = Field(default_factory=list)
+    sigma_matches: list[str] = Field(default_factory=list)
 
 
 class Incident(BaseModel):
