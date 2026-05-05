@@ -1,18 +1,19 @@
 # ============================================================
-# TR1NITY · Docker Compose · Phase 0 — Foundation (v0.1.0)
+# TR1NITY · Docker Compose · Phase 1 — Multi-source Ingestion (v0.2.0)
 # ============================================================
 # `make up` from the repo root will boot:
-#   wazuh-manager      Wazuh server      (HIDS)
+#   wazuh-manager      Wazuh server      (HIDS)        [profile: full|wazuh]
 #   wazuh-indexer      OpenSearch fork   (storage)
 #   postgres           Cases / audit
 #   chromadb           RAG vector store  (Phase 5)
-#   ingestor           FastAPI · 8001    (Module 1, Phase 1)
-#   correlator         FastAPI · 8002    (Module 2, Phase 2)
-#   ai-assist          FastAPI · 8003    (Module 3, Phase 5)
-#   api                FastAPI · 8000    (Module 5, Phase 3)
+#   ingestor           FastAPI · 8001    (Phase 1 — full impl)
+#   correlator         FastAPI · 8002    (Phase 2 — stub)
+#   ai-assist          FastAPI · 8003    (Phase 5 — stub)
+#   api                FastAPI · 8000    (Phase 3 — stub)
 #
-# Phase 0 commitment: every service in this file boots clean and
-# answers /healthz with HTTP 200, on a 16 GB host.
+# Phase 1 ingestor speaks ECS-8.11 and writes to a `tr1nity-events-*`
+# index when `DRY_RUN=false` and an OpenSearch is reachable. The
+# default below keeps DRY_RUN=true so `make up` works without Wazuh.
 # ============================================================
 
 name: tr1nity
@@ -149,17 +150,21 @@ services:
     build:
       context: ../services/ingestor
       dockerfile: Dockerfile
-    image: tr1nity/ingestor:0.1.0
+    image: tr1nity/ingestor:0.2.0
     container_name: tr1nity-ingestor
     hostname: ingestor
     <<: *restart
     environment:
       <<: *common-env
-      OPENSEARCH_HOST: wazuh-indexer
-      OPENSEARCH_PORT: 9200
+      # Phase-1 ingestor settings
+      DRY_RUN: ${INGESTOR_DRY_RUN:-true}
+      ENABLE_AUTH: ${INGESTOR_ENABLE_AUTH:-false}
+      INGESTOR_AUTH_TOKEN: ${INGESTOR_AUTH_TOKEN:-}
+      OPENSEARCH_URL: ${OPENSEARCH_URL:-https://wazuh-indexer:9200}
       OPENSEARCH_USERNAME: ${OPENSEARCH_USERNAME:-admin}
       OPENSEARCH_PASSWORD: ${OPENSEARCH_PASSWORD:-ChangeMeAtFirstBoot!}
-      OPENSEARCH_VERIFY_TLS: "false"
+      OPENSEARCH_INDEX_PREFIX: ${OPENSEARCH_INDEX_PREFIX:-tr1nity-events}
+      OPENSEARCH_VERIFY_TLS: ${OPENSEARCH_VERIFY_TLS:-false}
     ports:
       - "${TR1NITY_INGESTOR_PORT:-8001}:8001"
     healthcheck:

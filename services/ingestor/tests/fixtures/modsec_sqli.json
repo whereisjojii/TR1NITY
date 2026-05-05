@@ -1,0 +1,32 @@
+{
+  "transaction": {
+    "client_ip": "203.0.113.45",
+    "time_stamp": "Mon Jan 15 14:36:45 2024",
+    "server_id": "abc123",
+    "client_port": 41234,
+    "host_ip": "10.0.0.10",
+    "host_port": 443,
+    "transaction_id": "txn-9f8e7d6c-5b4a",
+    "request": {
+      "method": "POST",
+      "uri": "/login.php?id=1' OR '1'='1",
+      "http_version": "1.1",
+      "headers": {
+        "User-Agent": "sqlmap/1.7"
+      }
+    },
+    "response": {
+      "http_code": 403,
+      "intercepted": true
+    },
+    "messages": [
+      {
+        "message": "SQL Injection Attack: Common Injection Testing Detected",
+        "details": {
+          "ruleId": "942100",
+          "severity": "2"
+        }
+      }
+    ]
+  }
+}

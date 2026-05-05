@@ -1,4 +1,4 @@
-"""Smoke tests for the ingestor Phase-0 hello-world."""
+"""Smoke tests for the ingestor."""
 
 from __future__ import annotations
 
@@ -13,7 +13,7 @@ def test_root_returns_service_banner() -> None:
     assert response.status_code == 200
     body = response.json()
     assert body["service"] == "ingestor"
-    assert body["phase"].startswith("0")
+    assert body["phase"].startswith("1")
 
 
 def test_healthz_returns_ok() -> None:
@@ -26,7 +26,11 @@ def test_healthz_returns_ok() -> None:
     assert isinstance(body["uptime_seconds"], int | float)
 
 
-def test_readyz_returns_ready() -> None:
+def test_readyz_includes_sink_status() -> None:
     response = client.get("/readyz")
     assert response.status_code == 200
-    assert response.json() == {"status": "ready", "service": "ingestor"}
+    body = response.json()
+    assert body["service"] == "ingestor"
+    assert body["status"] in {"ready", "degraded"}
+    assert body["sink"] in {"stdout", "opensearch"}
+    assert isinstance(body["sink_healthy"], bool)

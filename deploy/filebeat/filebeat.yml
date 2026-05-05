@@ -1,0 +1,76 @@
+# Filebeat configuration template — TR1NITY Phase 1
+#
+# Drop this on a host that produces firewall / WAF / syslog logs and tail
+# them into the TR1NITY ingestor over HTTP. Filebeat does the durability
+# (back-pressure, persistent queue) so we do not need a Kafka layer for
+# v1.0.
+#
+# Reference:
+#   https://www.elastic.co/guide/en/beats/filebeat/current/configuration-filebeat-options.html
+
+filebeat.inputs:
+  # iptables / netfilter
+  - type: filestream
+    id: tr1nity-iptables
+    paths:
+      - /var/log/kern.log
+      - /var/log/iptables.log
+    parsers:
+      - ndjson:
+          target: ""
+          overwrite_keys: false
+    fields:
+      tr1nity_source: firewall
+    fields_under_root: true
+    include_lines:
+      - "IPT-DROP"
+      - "IPT-ACCEPT"
+      - "DROP "
+      - "REJECT "
+
+  # pfSense / OPNsense filterlog
+  - type: filestream
+    id: tr1nity-pfsense
+    paths:
+      - /var/log/filter.log
+    fields:
+      tr1nity_source: firewall
+    fields_under_root: true
+    include_lines:
+      - "filterlog"
+
+  # ModSecurity / WAF audit
+  - type: filestream
+    id: tr1nity-modsec
+    paths:
+      - /var/log/modsec_audit/*.log
+      - /var/log/nginx/modsec_audit.log
+    parsers:
+      - ndjson:
+          target: ""
+    fields:
+      tr1nity_source: waf
+    fields_under_root: true
+
+# We POST to the ingestor's /ingest/syslog (firewall) or /ingest/waf
+# endpoints — Filebeat's `output.http` is in beta but adequate for v0.2.
+# Production deployments should put the ingestor behind a reverse proxy
+# with TLS termination (Phase 6).
+output.http:
+  hosts:
+    - "${TR1NITY_INGESTOR_URL:http://ingestor:8001}/ingest/syslog"
+  format: json
+  headers:
+    Authorization: "Bearer ${INGESTOR_AUTH_TOKEN:}"
+
+processors:
+  - drop_fields:
+      fields: ["agent", "ecs", "host.architecture", "host.containerized"]
+
+logging.level: info
+logging.to_files: true
+logging.files:
+  path: /var/log/filebeat
+  name: filebeat
+  keepfiles: 7
+  permissions: 0640
