@@ -70,7 +70,13 @@ TECHNIQUE_INDEX: Final[dict[str, tuple[str, str]]] = {
     "T1110": ("Brute Force", "TA0006"),
     "T1110.001": ("Brute Force: Password Guessing", "TA0006"),
     "T1110.003": ("Brute Force: Password Spraying", "TA0006"),
-    "T1078": ("Valid Accounts", "TA0006"),
+    # T1078 (Valid Accounts) is a multi-tactic technique in ATT&CK
+    # (Defense Evasion / Initial Access / Persistence / Privilege Escalation).
+    # In our SOC narrative it always shows up *after* a successful brute-force
+    # — i.e. the attacker now has working credentials and is using them to get
+    # in — so we map it to the Initial Access tactic (TA0001), not Credential
+    # Access (TA0006), which is reserved for techniques that *obtain* creds.
+    "T1078": ("Valid Accounts", "TA0001"),
     # Defense Evasion
     "T1027": ("Obfuscated Files or Information", "TA0005"),
     # Discovery

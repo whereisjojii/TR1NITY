@@ -21,12 +21,17 @@ from __future__ import annotations
 import json
 import logging
 from dataclasses import dataclass, field
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from typing import Any
 
 import httpx
 
 log = logging.getLogger(__name__)
+
+# How far back the first poll reaches when no high-water-mark has been
+# set yet. Without this, events written between process start and the
+# very first poll would fall on the wrong side of "now" and be missed.
+_STARTUP_GRACE = timedelta(seconds=60)
 
 
 @dataclass(slots=True)
@@ -75,7 +80,7 @@ class OpenSearchEventConsumer:
         # Default high-water on first call: "now" minus a small grace
         # window so we don't lose events that arrived just before startup.
         if self._high_water is None:
-            self._high_water = datetime.now(UTC).replace(microsecond=0)
+            self._high_water = datetime.now(UTC).replace(microsecond=0) - _STARTUP_GRACE
 
         query = {
             "size": int(max_events),

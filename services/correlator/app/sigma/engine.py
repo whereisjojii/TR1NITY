@@ -158,8 +158,13 @@ def load_rules_from_dir(directory: str | Path) -> list[SigmaRule]:
     if not base.is_dir():
         log.info("SIGMA loader: rule dir %s does not exist; no rules loaded", base)
         return []
+    # ``*.y*ml`` would also match e.g. ``*.yyml`` / ``*.yzzzml`` — explicit
+    # extensions only, deduplicated since one file can't be both.
+    paths: set[Path] = set()
+    for pattern in ("*.yml", "*.yaml"):
+        paths.update(base.rglob(pattern))
     out: list[SigmaRule] = []
-    for path in sorted(base.rglob("*.y*ml")):
+    for path in sorted(paths):
         try:
             text = path.read_text(encoding="utf-8")
             out.extend(_parse_yaml_text(text, source_path=str(path)))
@@ -353,6 +358,12 @@ class SigmaEngine:
                             tags=rule.tags,
                         )
                     )
-            except ValueError:
+            except Exception:
+                # A buggy/unparseable rule must not take down the whole
+                # batch — log and move on. ValueError is the typical
+                # case from the parser, but a malformed event can also
+                # surface IndexError / KeyError / TypeError from the
+                # field walker, and we do not want any of those to drop
+                # remaining rules in the loop.
                 log.exception("SIGMA: rule %s evaluation error", rule.rule_id)
         return out
