@@ -1,7 +1,7 @@
 [project]
 name = "tr1nity-correlator"
-version = "0.1.0"
-description = "TR1NITY correlator service — Phase 0"
+version = "0.3.0"
+description = "TR1NITY correlator service — Phase 2 (The Brain)"
 readme = "README.md"
 requires-python = ">=3.11"
 license = { text = "MIT" }

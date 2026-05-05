@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — Phase 2 · v0.3.0-correlation
+- **Incident model** (`services/correlator/app/incident.py`) with `Incident` and `IncidentMember`, severity promotion (max-of-members), and `to_index_doc()` serializer for OpenSearch.
+- **Sliding-window grouping** (`services/correlator/app/grouping.py`) — events sharing a `source.ip` within `INCIDENT_WINDOW_SECONDS` (default 15 min) and below `INCIDENT_MAX_EVENTS` (default 500) collapse into one incident; events without an IP become single-event incidents.
+- **MITRE ATT&CK chain promotion** (`services/correlator/app/attack.py`) — deduped, kill-chain-ordered technique IDs and tactics; human-readable summary chain rendered onto every incident.
+- **In-process SIGMA-style engine** (`services/correlator/app/sigma/`) — strict subset of the SIGMA spec: equality + `contains` / `startswith` / `endswith` / `re` modifiers, list-as-OR, condition combinators (`and` / `or` / `not` / `1 of <prefix>*` / `1 of them`). Bundled rule pack covers Wazuh SSH brute-force, WAF SQLi, WAF path traversal, firewall portscan.
+- **Threat-intel cache** (`services/correlator/app/intel/`) — `Provider` protocol, TTL-bounded `IntelCache` (caches positive AND negative results), bundled file-based starter (`app/intel/data/ioc.json`); free feeds only, no paid APIs.
+- **Pluggable consumer + sinks** (`services/correlator/app/consumer/`, `app/sinks/`) — `InMemoryEventConsumer` (DRY_RUN + tests), `OpenSearchEventConsumer` (high-water-mark polling against `tr1nity-events-*`), `StdoutIncidentSink` (DRY_RUN), `OpenSearchIncidentSink` (writes to daily `tr1nity-incidents-YYYY.MM.dd`).
+- **Pipeline orchestrator** (`services/correlator/app/pipeline.py`) — wires consumer → SIGMA → grouping → ATT&CK + intel enrichment → sinks; exposes `last_incidents` for `/incidents`.
+- **HTTP API** — `POST /correlate` runs one tick; `GET /incidents` returns the latest tick's incidents; `POST /ingest-test` pushes events into the in-memory consumer for demos and integration tests.
+- **Docs rewrite** — `docs/modules/correlation.md` documents the full pipeline, configuration knobs, and tests.
+- **Tests** — 57 passing tests (`pytest`) covering grouping, ATT&CK ordering, the SIGMA engine (parser + matcher), intel caching, both sinks (with `httpx.MockTransport`), the OpenSearch consumer, full pipeline, and HTTP endpoints.
+
 ### Added — Phase 1 · v0.2.0-ingest
 - **ECS 8.11 schema** (`services/ingestor/app/ecs.py`) covering event/host/source/destination/user/network/http/url/rule/threat/tr1nity blocks with `to_index_doc()` serializer.
 - **Wazuh parser** (`app.sources.wazuh`) — converts Wazuh alert JSON to ECS, maps `rule.level 0–15 → severity 0–4 → ECS 0–7`, extracts MITRE tactic/technique metadata.

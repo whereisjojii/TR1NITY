@@ -184,17 +184,25 @@ services:
     build:
       context: ../services/correlator
       dockerfile: Dockerfile
-    image: tr1nity/correlator:0.1.0
+    image: tr1nity/correlator:0.3.0
     container_name: tr1nity-correlator
     hostname: correlator
     <<: *restart
     environment:
       <<: *common-env
-      OPENSEARCH_HOST: wazuh-indexer
-      OPENSEARCH_PORT: 9200
+      DRY_RUN: ${CORRELATOR_DRY_RUN:-true}
+      OPENSEARCH_URL: ${OPENSEARCH_URL:-https://wazuh-indexer:9200}
       OPENSEARCH_USERNAME: ${OPENSEARCH_USERNAME:-admin}
       OPENSEARCH_PASSWORD: ${OPENSEARCH_PASSWORD:-ChangeMeAtFirstBoot!}
       OPENSEARCH_VERIFY_TLS: "false"
+      EVENTS_INDEX_PATTERN: ${EVENTS_INDEX_PATTERN:-tr1nity-events-*}
+      INCIDENTS_INDEX_PREFIX: ${INCIDENTS_INDEX_PREFIX:-tr1nity-incidents}
+      INCIDENT_WINDOW_SECONDS: ${INCIDENT_WINDOW_SECONDS:-900}
+      INCIDENT_MAX_EVENTS: ${INCIDENT_MAX_EVENTS:-500}
+      POLL_INTERVAL_SECONDS: ${POLL_INTERVAL_SECONDS:-10}
+      INTEL_CACHE_TTL_SECONDS: ${INTEL_CACHE_TTL_SECONDS:-3600}
+      INTEL_ENABLED: ${INTEL_ENABLED:-true}
+      SIGMA_ENABLED: ${SIGMA_ENABLED:-true}
       POSTGRES_HOST: postgres
       POSTGRES_PORT: 5432
       POSTGRES_DB: ${POSTGRES_DB:-tr1nity}

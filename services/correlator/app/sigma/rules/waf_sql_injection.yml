@@ -1,0 +1,24 @@
+title: SQL injection attempt blocked by WAF
+id: tr1nity-sigma-waf-sqli
+status: stable
+description: |
+  ModSecurity (or any other ECS-emitting WAF) flagged a request as SQL
+  injection. We match on the message body since OWASP CRS rule IDs vary
+  between paranoia levels — the message keywords are stable.
+references:
+  - https://owasp.org/www-project-top-ten/2021/A03_2021-Injection
+tags:
+  - attack.t1190
+  - attack.initial_access
+level: high
+
+detection:
+  selection_source:
+    tr1nity.source: waf
+  selection_message:
+    message|contains:
+      - "SQL Injection"
+      - "SQLi"
+      - "OR 1=1"
+      - "UNION SELECT"
+  condition: selection_source and selection_message

@@ -1,0 +1,24 @@
+title: Suspected port scan (firewall denies)
+id: tr1nity-sigma-firewall-portscan
+status: stable
+description: |
+  Many firewall denies in a short window from one source IP usually mean
+  a portscan or noisy reconnaissance bot. We fire per-event here and let
+  the correlator's grouping logic collapse them into one incident; that
+  way analysts still see the per-event evidence.
+tags:
+  - attack.t1595
+  - attack.t1046
+  - attack.reconnaissance
+level: medium
+
+detection:
+  selection_source:
+    tr1nity.source: firewall
+  selection_action:
+    event.action|contains:
+      - "block"
+      - "drop"
+      - "deny"
+      - "reject"
+  condition: selection_source and selection_action

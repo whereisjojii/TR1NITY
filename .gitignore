@@ -13,6 +13,11 @@ datasets/
 CICIDS2017/
 UNSW-NB15/
 
+# Re-allow the bundled threat-intel starter — small (<100 KB), part of the
+# correlator service, and required for fresh `make up` to produce intel hits.
+!services/correlator/app/intel/data/
+!services/correlator/app/intel/data/*.json
+
 # ---- ML models (NEVER committed; published as GitHub Release assets) ----
 models/
 *.pkl
