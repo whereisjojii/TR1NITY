@@ -37,7 +37,7 @@ jobs:
       matrix:
         service: [ingestor, correlator, ai-assist, api]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Install pip-audit
         run: python -m pip install --upgrade pip pip-audit
@@ -79,7 +79,7 @@ jobs:
       TRIVY_JAVA_DB_REPOSITORY: ghcr.io/aquasecurity/trivy-java-db:1
       TRIVY_TIMEOUT: 15m
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Install Trivy
         run: |
@@ -182,7 +182,7 @@ jobs:
       TRIVY_JAVA_DB_REPOSITORY: ghcr.io/aquasecurity/trivy-java-db:1
       TRIVY_TIMEOUT: 15m
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Install Trivy
         run: |
@@ -281,7 +281,7 @@ jobs:
     env:
       GITLEAKS_VERSION: 8.24.3
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 0
 
