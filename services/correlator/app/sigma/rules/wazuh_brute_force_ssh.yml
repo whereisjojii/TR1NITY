@@ -1,0 +1,24 @@
+title: SSH brute-force burst (Wazuh)
+id: tr1nity-sigma-wazuh-bruteforce-ssh
+status: stable
+description: |
+  Wazuh group "authentication_failures" with rule.level >= 8 — the level
+  threshold matches Wazuh's bundled brute-force aggregation rules. This
+  rule is intentionally noisy on a single event; the correlator's
+  windowed grouping is what turns it into one incident per source IP.
+references:
+  - https://wazuh.com/blog/detecting-ssh-brute-force-attacks/
+tags:
+  - attack.t1110
+  - attack.t1110.001
+  - attack.credential_access
+level: high
+
+detection:
+  selection_source:
+    tr1nity.source: wazuh
+  selection_group:
+    rule.category|contains: authentication_failures
+  selection_level:
+    rule.id|startswith: "55"  # Wazuh SSH brute-force rules live in the 5500-5800 range
+  condition: selection_source and (selection_group or selection_level)

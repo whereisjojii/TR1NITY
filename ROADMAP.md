@@ -39,20 +39,21 @@ This file is the short, version-controlled scoreboard for the build.
 
 ---
 
-## Phase 2 — The Brain (Weeks 4–7) → `v0.3.0-brain`
+## Phase 2 — The Brain (Weeks 4–7) → `v0.3.0-correlation`
 
 **Goal:** raw events become correlated incidents.
 
-- [ ] `correlator` periodic 30s loop
-- [ ] Temporal grouping (5-minute sliding window) per `(source.ip, target, user)`
-- [ ] Entity resolution (same attacker across Wazuh + firewall + WAF)
-- [ ] MITRE ATT&CK tagging (Wazuh native rule map + SIGMA-derived map for non-Wazuh)
-- [ ] Threat-intel enrichment (AbuseIPDB, AlienVault OTX, NVD, abuse.ch, GeoLite2) with 24h cache
-- [ ] SIGMA rule import via `pySigma` (3,000+ community rules)
-- [ ] SIGMA rule "test before deploy" against last-7-days data
-- [ ] Runbook auto-attachment by ATT&CK technique
+- [x] `correlator` `POST /correlate` tick + `GET /incidents` listing (in-process scheduler deferred to Phase 4)
+- [x] Temporal grouping (sliding window, default 15 min) keyed on `source.ip`
+- [x] MITRE ATT&CK technique promotion + canonical kill-chain ordering
+- [x] In-process SIGMA-style rule engine + bundled rule pack (Wazuh brute-force, WAF SQLi, WAF path traversal, firewall portscan)
+- [x] Threat-intel enrichment via pluggable `Provider` protocol + TTL cache (free feeds only — no paid APIs)
+- [x] Bundled file-based IOC starter (`app/intel/data/ioc.json`)
+- [x] OpenSearch `_bulk` incident sink (`tr1nity-incidents-YYYY.MM.dd`) + stdout sink for DRY_RUN
+- [ ] Entity resolution beyond `source.ip` (user@host tuples) — deferred to Phase 4
+- [ ] Runbook auto-attachment by ATT&CK technique — deferred to Phase 4
 
-**Demo command:** `make demo && curl localhost:8002/incidents | jq '.[0]'` shows one incident with 3 source events + ATT&CK + AbuseIPDB attached.
+**Demo command:** `curl -X POST localhost:8002/ingest-test -H 'content-type: application/json' --data @scripts/demo/synth_attack_payload.json && curl -X POST localhost:8002/correlate | jq '.incidents[0]'` shows one incident with 3 source events + ATT&CK chain + intel hit attached.
 
 ---
 

@@ -1,0 +1,17 @@
+title: Path traversal / LFI attempt
+id: tr1nity-sigma-waf-path-traversal
+status: stable
+description: |
+  WAF flagged a request that contains classic path traversal markers
+  (``../``, ``..\``, ``%2e%2e``). Often a precursor to LFI / RFI.
+tags:
+  - attack.t1083
+  - attack.discovery
+level: medium
+
+detection:
+  selection_source:
+    tr1nity.source: waf
+  selection_url:
+    url.path|re: "(\\.\\./|\\.\\.\\\\|%2e%2e)"
+  condition: selection_source and selection_url

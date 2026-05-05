@@ -27,7 +27,7 @@ def test_readyz_returns_ready() -> None:
     assert response.json() == {"status": "ready", "service": "correlator"}
 
 
-def test_incidents_empty_in_phase_zero() -> None:
+def test_incidents_empty_at_boot() -> None:
     response = client.get("/incidents")
     assert response.status_code == 200
     body = response.json()
