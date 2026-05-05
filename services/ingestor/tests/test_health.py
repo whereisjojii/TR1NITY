@@ -1,0 +1,32 @@
+"""Smoke tests for the ingestor Phase-0 hello-world."""
+
+from __future__ import annotations
+
+from app.main import app
+from fastapi.testclient import TestClient
+
+client = TestClient(app)
+
+
+def test_root_returns_service_banner() -> None:
+    response = client.get("/")
+    assert response.status_code == 200
+    body = response.json()
+    assert body["service"] == "ingestor"
+    assert body["phase"].startswith("0")
+
+
+def test_healthz_returns_ok() -> None:
+    response = client.get("/healthz")
+    assert response.status_code == 200
+    body = response.json()
+    assert body["status"] == "ok"
+    assert body["service"] == "ingestor"
+    assert "version" in body
+    assert isinstance(body["uptime_seconds"], int | float)
+
+
+def test_readyz_returns_ready() -> None:
+    response = client.get("/readyz")
+    assert response.status_code == 200
+    assert response.json() == {"status": "ready", "service": "ingestor"}

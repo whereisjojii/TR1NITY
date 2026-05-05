@@ -6,8 +6,8 @@ First — thank you for considering a contribution. TR1NITY is built by SOC anal
 
 ## Ground rules
 
-- **Defensive security only.** TR1NITY is a defender-side platform. Pull requests that add offensive tooling, malware samples, or live-target attack capabilities will be closed. Synthetic attack *generators* (used inside `make demo` to exercise the pipeline) are welcome.
-- **Zero paid APIs.** Every external service we depend on must have a permanent free tier. If your contribution introduces an API call, document the free-tier limits in `docs/planning/03-build-pathway.md`.
+- **Defensive security only.** TR1NITY is a defender-side platform. Pull requests that add offensive tooling, malware samples, or live-target attack capabilities will be closed. Synthetic attack _generators_ (used inside `make demo` to exercise the pipeline) are welcome.
+- **Zero paid APIs.** Every external service we depend on must have a permanent free tier. If your contribution introduces an API call, document the free-tier limits in the relevant module README and `.env.example`.
 - **Small, focused PRs.** One module change per PR. Cross-module refactors should be staged.
 - **Repo size discipline.** No single file over 10 MB. No datasets, model weights, or container images committed — see [`.gitignore`](.gitignore).
 
@@ -34,7 +34,7 @@ pip install pre-commit
 pre-commit install
 
 # (Optional, for AI Assist development) install Vulkan + llama.cpp
-# See docs/planning/03-build-pathway.md, Phase 5
+# See ROADMAP.md, Phase 5
 ```
 
 ### Running the stack locally

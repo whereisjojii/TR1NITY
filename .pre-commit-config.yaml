@@ -8,18 +8,19 @@ repos:
       - id: trailing-whitespace
       - id: end-of-file-fixer
       - id: check-yaml
-        args: ["--allow-multiple-documents"]
+        args: ["--allow-multiple-documents", "--unsafe"]
+        # mkdocs.yml uses python/name: tags for pymdownx — needs --unsafe
       - id: check-json
       - id: check-toml
       - id: check-added-large-files
-        args: ["--maxkb=10240"]   # 10 MB hard limit
+        args: ["--maxkb=10240"] # 10 MB hard limit
       - id: check-merge-conflict
       - id: detect-private-key
       - id: mixed-line-ending
         args: ["--fix=lf"]
 
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.5.0
+    rev: v0.7.4
     hooks:
       - id: ruff
         args: ["--fix"]

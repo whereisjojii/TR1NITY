@@ -2,11 +2,11 @@
 
 Docker Compose is the primary deployment target for v1.0. Kubernetes manifests are a v2.0 stretch goal.
 
-| File | Purpose |
-|------|---------|
-| `docker-compose.yml` | Default: full SIEM core stack |
+| File                     | Purpose                                                            |
+| ------------------------ | ------------------------------------------------------------------ |
+| `docker-compose.yml`     | Default: full SIEM core stack                                      |
 | `docker-compose.gpu.yml` | Override: enables Vulkan GPU passthrough for `ai-assist` (Phase 5) |
-| `docker-compose.dev.yml` | Override: bind-mounts service source for hot reload |
+| `docker-compose.dev.yml` | Override: bind-mounts service source for hot reload                |
 
 Use:
 

@@ -7,7 +7,7 @@ COMPOSE        := docker compose -f deploy/docker-compose.yml
 PROJECT_NAME   := tr1nity
 
 .PHONY: help up down restart logs ps build pull clean demo \
-        test lint format hooks docs docs-serve report
+        test lint format hooks docs docs-serve
 
 help: ## Show this help
 	@echo ""
@@ -53,18 +53,18 @@ demo: ## Generate a synthetic Wazuh + firewall + WAF attack chain
 	@echo "[demo] not implemented yet. Coming in Phase 1."
 
 test: ## Run unit tests across all services
-	@for svc in ingestor correlator ai-assist api; do \
+	@set -e; for svc in ingestor correlator ai-assist api; do \
 	    if [ -d services/$$svc/tests ]; then \
 	        echo "===> services/$$svc"; \
-	        ( cd services/$$svc && pytest -q ); \
+	        ( cd services/$$svc && PYTHONPATH=. pytest -q ); \
 	    fi; \
 	done
 
-lint: ## Lint all services
-	@for svc in ingestor correlator ai-assist api; do \
+lint: ## Lint all services with ruff
+	@set -e; for svc in ingestor correlator ai-assist api; do \
 	    if [ -f services/$$svc/pyproject.toml ] || [ -f services/$$svc/requirements.txt ]; then \
 	        echo "===> ruff services/$$svc"; \
-	        ruff check services/$$svc; \
+	        ( cd services/$$svc && ruff check . ); \
 	    fi; \
 	done
 
@@ -84,13 +84,3 @@ docs: ## Build the MkDocs site (output: site/)
 
 docs-serve: ## Serve the MkDocs site at http://127.0.0.1:8000
 	@if [ -f mkdocs.yml ]; then mkdocs serve; else echo "mkdocs.yml not present yet (pre-Phase-0)."; fi
-
-report: ## Rebuild the LaTeX Phase-1 report (docs/report/tr1nity_report.pdf)
-	cd docs/report && \
-	    ( cd figures && dot -Tpdf architecture.dot -o architecture.pdf ) && \
-	    ( cd figures && dot -Tpdf usecase.dot -o usecase.pdf ) && \
-	    ( cd figures && python3 gantt.py ) && \
-	    pdflatex -interaction=nonstopmode tr1nity_report.tex && \
-	    biber tr1nity_report && \
-	    pdflatex -interaction=nonstopmode tr1nity_report.tex && \
-	    pdflatex -interaction=nonstopmode tr1nity_report.tex

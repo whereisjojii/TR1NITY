@@ -13,25 +13,28 @@ concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
 
+defaults:
+  run:
+    # Force Git Bash explicitly — Windows runners with WSL2 (Docker Desktop) resolve
+    # `shell: bash` to WSL's bash.EXE which cannot access D:\ paths or Windows Python.
+    # Use the 8.3 short path (PROGRA~1) because GitHub Actions splits the `shell:`
+    # field on the first space, which breaks `C:\Program Files\...`.
+    shell: 'C:\PROGRA~1\Git\bin\bash.EXE --noprofile --norc -eo pipefail {0}'
+
 jobs:
   # ----------------------------------------------------------------
   # Repo-wide hygiene: pre-commit hooks + file size guard
   # ----------------------------------------------------------------
   hygiene:
     name: Repo hygiene
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, tr1nity, windows]
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
-
       - name: Install pre-commit
-        run: pip install pre-commit
+        run: python -m pip install --upgrade pip pre-commit
 
       - name: Run pre-commit
         run: pre-commit run --all-files --show-diff-on-failure
@@ -39,7 +42,7 @@ jobs:
       - name: Check no file > 10 MB committed
         run: |
           set -e
-          large=$(find . -type f -size +10M ! -path "./.git/*" || true)
+          large=$(find . -type f -size +10M ! -path "./.git/*" ! -path "./_work/*" || true)
           if [ -n "$large" ]; then
             echo "ERROR: files >10 MB are not allowed in this repo:"
             echo "$large"
@@ -48,11 +51,11 @@ jobs:
           echo "All committed files are within the 10 MB limit."
 
   # ----------------------------------------------------------------
-  # Python services: lint + type-check + unit tests
+  # Python services: lint + unit tests + bandit (security)
   # ----------------------------------------------------------------
   python:
     name: Python (${{ matrix.service }})
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, tr1nity, windows]
     needs: hygiene
     strategy:
       fail-fast: false
@@ -61,23 +64,26 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
-          cache: pip
-
       - name: Install dev deps for ${{ matrix.service }}
         working-directory: services/${{ matrix.service }}
         run: |
           python -m pip install --upgrade pip
           if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
           if [ -f requirements-dev.txt ]; then pip install -r requirements-dev.txt; fi
-          pip install ruff pytest
+          pip install ruff pytest bandit
 
       - name: Lint with ruff
         working-directory: services/${{ matrix.service }}
         run: ruff check .
+
+      - name: Static security scan (bandit)
+        working-directory: services/${{ matrix.service }}
+        run: |
+          if [ -d app ]; then
+            bandit -r app -ll
+          else
+            echo "No app/ directory in ${{ matrix.service }} — skipping bandit"
+          fi
 
       - name: Run tests
         working-directory: services/${{ matrix.service }}
@@ -93,7 +99,7 @@ jobs:
   # ----------------------------------------------------------------
   compose:
     name: Docker Compose smoke
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, tr1nity, windows]
     needs: hygiene
     steps:
       - uses: actions/checkout@v4

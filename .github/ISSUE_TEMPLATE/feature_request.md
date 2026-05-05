@@ -14,9 +14,9 @@ assignees: []
 
 ## Why this fits TR1NITY's scope
 
-<!-- TR1NITY is opinionated. Read docs/planning/02-final-scope.md before filing.
-     If your idea has overlap with anything we cut (UEBA, real-time LLM triage, multi-class flow ML, etc.),
-     explain why this case is different. -->
+<!-- TR1NITY is opinionated. Read ARCHITECTURE.md and ROADMAP.md before filing.
+     If your idea has overlap with deliberately-cut scope (UEBA, real-time LLM triage,
+     multi-class flow ML, etc.), explain why this case is different. -->
 
 ## Module / Phase
 

@@ -1,0 +1,344 @@
+name: Security
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  schedule:
+    # Weekly Monday 06:00 UTC scan to catch new CVEs in pinned deps
+    - cron: "0 6 * * 1"
+
+permissions:
+  contents: read
+  security-events: write
+
+concurrency:
+  group: security-${{ github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    # Force Git Bash explicitly — Windows runners with WSL2 (Docker Desktop) resolve
+    # `shell: bash` to WSL's bash.EXE which cannot access D:\ paths or Windows Python.
+    # Use the 8.3 short path (PROGRA~1) because GitHub Actions splits the `shell:`
+    # field on the first space, which breaks `C:\Program Files\...`.
+    shell: 'C:\PROGRA~1\Git\bin\bash.EXE --noprofile --norc -eo pipefail {0}'
+
+jobs:
+  # ----------------------------------------------------------------
+  # pip-audit: known CVEs in Python pinned dependencies
+  # ----------------------------------------------------------------
+  pip-audit:
+    name: pip-audit (${{ matrix.service }})
+    runs-on: [self-hosted, tr1nity, windows]
+    strategy:
+      fail-fast: false
+      matrix:
+        service: [ingestor, correlator, ai-assist, api]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install pip-audit
+        run: python -m pip install --upgrade pip pip-audit
+
+      - name: Audit ${{ matrix.service }} runtime deps
+        working-directory: services/${{ matrix.service }}
+        run: |
+          if [ -f requirements.txt ]; then
+            pip-audit -r requirements.txt --strict
+          else
+            echo "No requirements.txt for ${{ matrix.service }} — skipping"
+          fi
+
+      - name: Audit ${{ matrix.service }} dev deps
+        working-directory: services/${{ matrix.service }}
+        run: |
+          if [ -f requirements-dev.txt ]; then
+            pip-audit -r requirements-dev.txt --strict
+          else
+            echo "No requirements-dev.txt for ${{ matrix.service }} — skipping"
+          fi
+
+  # ----------------------------------------------------------------
+  # Install Trivy binary once per runner job, then re-use across the
+  # filesystem and config scan jobs. The official aquasecurity/trivy-action
+  # is a Linux-only bash composite action and cannot run on a self-hosted
+  # Windows runner. Pin the binary version explicitly so scans are
+  # reproducible.
+  # ----------------------------------------------------------------
+  trivy-fs:
+    name: Trivy (filesystem)
+    runs-on: [self-hosted, tr1nity, windows]
+    env:
+      TRIVY_VERSION: 0.70.0
+      # Trivy normally pulls its vuln DB from mirror.gcr.io, which is slow
+      # from the self-hosted runner. Point it at the public ghcr.io copy
+      # instead and give the download a generous timeout.
+      TRIVY_DB_REPOSITORY: ghcr.io/aquasecurity/trivy-db:2
+      TRIVY_JAVA_DB_REPOSITORY: ghcr.io/aquasecurity/trivy-java-db:1
+      TRIVY_TIMEOUT: 15m
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Trivy
+        run: |
+          set -e
+          archive="trivy_${TRIVY_VERSION}_windows-64bit.zip"
+          url="https://github.com/aquasecurity/trivy/releases/download/v${TRIVY_VERSION}/${archive}"
+          mkdir -p .bin/trivy
+
+          # Cache the binary in the runner's persistent tool cache so we do
+          # not have to redownload it every job. RUNNER_TOOL_CACHE survives
+          # workspace cleanups on self-hosted runners.
+          cache_dir="${RUNNER_TOOL_CACHE:-$HOME/_tool}/trivy/${TRIVY_VERSION}"
+          mkdir -p "$cache_dir"
+
+          if [ -f "$cache_dir/trivy.exe" ]; then
+            echo "Using cached Trivy ${TRIVY_VERSION} from $cache_dir"
+            cp "$cache_dir/trivy.exe" .bin/trivy/trivy.exe
+          else
+            echo "Downloading Trivy ${TRIVY_VERSION} from $url"
+            # Network on the self-hosted runner is occasionally flaky against
+            # github.com (curl error 56: Recv failure: Connection was reset).
+            # Wrap curl in an outer bash retry loop on top of curl --retry,
+            # so even sustained network blips eventually succeed.
+            ok=0
+            for attempt in 1 2 3 4 5 6 7 8; do
+              echo "Attempt $attempt/8 ..."
+              if curl -sSL --fail \
+                --retry 3 \
+                --retry-delay 5 \
+                --retry-all-errors \
+                --connect-timeout 30 \
+                --max-time 180 \
+                "$url" -o ".bin/trivy/${archive}"; then
+                ok=1
+                break
+              fi
+              echo "Download failed; sleeping before next attempt."
+              sleep 15
+            done
+            if [ "$ok" -ne 1 ]; then
+              echo "Trivy download failed after repeated retries."
+              exit 1
+            fi
+            (cd .bin/trivy && unzip -o "${archive}" >/dev/null)
+            cp .bin/trivy/trivy.exe "$cache_dir/trivy.exe"
+          fi
+          ./.bin/trivy/trivy.exe --version
+
+      - name: Run Trivy in fs mode
+        run: |
+          ./.bin/trivy/trivy.exe fs . \
+            --format sarif \
+            --output trivy-fs.sarif \
+            --severity CRITICAL,HIGH \
+            --ignore-unfixed \
+            --timeout 15m \
+            --exit-code 0
+
+      - name: Ensure SARIF exists
+        if: always()
+        run: |
+          if [ ! -f trivy-fs.sarif ]; then
+            echo "Trivy did not produce a SARIF report — uploading an empty placeholder so the SARIF step does not fail the job."
+            cat > trivy-fs.sarif <<'EOF'
+          {
+            "version": "2.1.0",
+            "$schema": "https://json.schemastore.org/sarif-2.1.0.json",
+            "runs": [
+              {
+                "tool": {
+                  "driver": {
+                    "name": "Trivy",
+                    "informationUri": "https://trivy.dev",
+                    "rules": []
+                  }
+                },
+                "results": []
+              }
+            ]
+          }
+          EOF
+          fi
+
+      - name: Upload SARIF
+        if: always()
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: trivy-fs.sarif
+          category: trivy-fs
+
+  # ----------------------------------------------------------------
+  # Trivy config scan (Dockerfiles, Compose, GH Actions)
+  # ----------------------------------------------------------------
+  trivy-config:
+    name: Trivy (config)
+    runs-on: [self-hosted, tr1nity, windows]
+    env:
+      TRIVY_VERSION: 0.70.0
+      TRIVY_DB_REPOSITORY: ghcr.io/aquasecurity/trivy-db:2
+      TRIVY_JAVA_DB_REPOSITORY: ghcr.io/aquasecurity/trivy-java-db:1
+      TRIVY_TIMEOUT: 15m
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Trivy
+        run: |
+          set -e
+          archive="trivy_${TRIVY_VERSION}_windows-64bit.zip"
+          url="https://github.com/aquasecurity/trivy/releases/download/v${TRIVY_VERSION}/${archive}"
+          mkdir -p .bin/trivy
+
+          # Cache the binary in the runner's persistent tool cache so we do
+          # not have to redownload it every job. See trivy-fs for details.
+          cache_dir="${RUNNER_TOOL_CACHE:-$HOME/_tool}/trivy/${TRIVY_VERSION}"
+          mkdir -p "$cache_dir"
+
+          if [ -f "$cache_dir/trivy.exe" ]; then
+            echo "Using cached Trivy ${TRIVY_VERSION} from $cache_dir"
+            cp "$cache_dir/trivy.exe" .bin/trivy/trivy.exe
+          else
+            echo "Downloading Trivy ${TRIVY_VERSION} from $url"
+            ok=0
+            for attempt in 1 2 3 4 5 6 7 8; do
+              echo "Attempt $attempt/8 ..."
+              if curl -sSL --fail \
+                --retry 3 \
+                --retry-delay 5 \
+                --retry-all-errors \
+                --connect-timeout 30 \
+                --max-time 180 \
+                "$url" -o ".bin/trivy/${archive}"; then
+                ok=1
+                break
+              fi
+              echo "Download failed; sleeping before next attempt."
+              sleep 15
+            done
+            if [ "$ok" -ne 1 ]; then
+              echo "Trivy download failed after repeated retries."
+              exit 1
+            fi
+            (cd .bin/trivy && unzip -o "${archive}" >/dev/null)
+            cp .bin/trivy/trivy.exe "$cache_dir/trivy.exe"
+          fi
+          ./.bin/trivy/trivy.exe --version
+
+      - name: Run Trivy on configs
+        run: |
+          ./.bin/trivy/trivy.exe config . \
+            --format sarif \
+            --output trivy-config.sarif \
+            --severity CRITICAL,HIGH \
+            --timeout 15m \
+            --exit-code 0
+
+      - name: Ensure SARIF exists
+        if: always()
+        run: |
+          if [ ! -f trivy-config.sarif ]; then
+            echo "Trivy did not produce a SARIF report — uploading an empty placeholder so the SARIF step does not fail the job."
+            cat > trivy-config.sarif <<'EOF'
+          {
+            "version": "2.1.0",
+            "$schema": "https://json.schemastore.org/sarif-2.1.0.json",
+            "runs": [
+              {
+                "tool": {
+                  "driver": {
+                    "name": "Trivy",
+                    "informationUri": "https://trivy.dev",
+                    "rules": []
+                  }
+                },
+                "results": []
+              }
+            ]
+          }
+          EOF
+          fi
+
+      - name: Upload SARIF
+        if: always()
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: trivy-config.sarif
+          category: trivy-config
+
+  # ----------------------------------------------------------------
+  # Gitleaks secret scanning
+  #
+  # Note: gitleaks/gitleaks-action@v2 hardcodes the *.tar.gz asset URL,
+  # but Windows releases of gitleaks ship as .zip — so the action 404s
+  # on a self-hosted Windows runner. We install the binary directly
+  # from the official release archive instead.
+  # ----------------------------------------------------------------
+  gitleaks:
+    name: Gitleaks (secret scan)
+    runs-on: [self-hosted, tr1nity, windows]
+    env:
+      GITLEAKS_VERSION: 8.24.3
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install gitleaks
+        run: |
+          set -e
+          archive="gitleaks_${GITLEAKS_VERSION}_windows_x64.zip"
+          url="https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/${archive}"
+          mkdir -p .bin/gitleaks
+
+          # Cache binary in RUNNER_TOOL_CACHE; see trivy-fs job for details.
+          cache_dir="${RUNNER_TOOL_CACHE:-$HOME/_tool}/gitleaks/${GITLEAKS_VERSION}"
+          mkdir -p "$cache_dir"
+
+          if [ -f "$cache_dir/gitleaks.exe" ]; then
+            echo "Using cached gitleaks ${GITLEAKS_VERSION} from $cache_dir"
+            cp "$cache_dir/gitleaks.exe" .bin/gitleaks/gitleaks.exe
+          else
+            echo "Downloading gitleaks ${GITLEAKS_VERSION} from $url"
+            ok=0
+            for attempt in 1 2 3 4 5 6 7 8; do
+              echo "Attempt $attempt/8 ..."
+              if curl -sSL --fail \
+                --retry 3 \
+                --retry-delay 5 \
+                --retry-all-errors \
+                --connect-timeout 30 \
+                --max-time 180 \
+                "$url" -o ".bin/gitleaks/${archive}"; then
+                ok=1
+                break
+              fi
+              echo "Download failed; sleeping before next attempt."
+              sleep 15
+            done
+            if [ "$ok" -ne 1 ]; then
+              echo "gitleaks download failed after repeated retries."
+              exit 1
+            fi
+            (cd .bin/gitleaks && unzip -o "${archive}" >/dev/null)
+            cp .bin/gitleaks/gitleaks.exe "$cache_dir/gitleaks.exe"
+          fi
+          ./.bin/gitleaks/gitleaks.exe version
+
+      - name: Run gitleaks
+        run: |
+          ./.bin/gitleaks/gitleaks.exe detect \
+            --source . \
+            --redact \
+            --no-banner \
+            --exit-code 1 \
+            --report-format sarif \
+            --report-path gitleaks.sarif
+
+      - name: Upload SARIF
+        if: always()
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: gitleaks.sarif
+          category: gitleaks
