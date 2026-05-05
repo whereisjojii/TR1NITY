@@ -87,18 +87,45 @@ jobs:
           archive="trivy_${TRIVY_VERSION}_windows-64bit.zip"
           url="https://github.com/aquasecurity/trivy/releases/download/v${TRIVY_VERSION}/${archive}"
           mkdir -p .bin/trivy
-          # Network on the self-hosted runner is occasionally flaky against
-          # github.com (curl error 56: Recv failure: Connection was reset).
-          # Retry up to 5 times with exponential-ish backoff so a single
-          # transient TCP reset does not fail the whole job.
-          curl -sSL --fail \
-            --retry 5 \
-            --retry-delay 5 \
-            --retry-all-errors \
-            --connect-timeout 30 \
-            --max-time 300 \
-            "$url" -o ".bin/trivy/${archive}"
-          (cd .bin/trivy && unzip -o "${archive}" >/dev/null)
+
+          # Cache the binary in the runner's persistent tool cache so we do
+          # not have to redownload it every job. RUNNER_TOOL_CACHE survives
+          # workspace cleanups on self-hosted runners.
+          cache_dir="${RUNNER_TOOL_CACHE:-$HOME/_tool}/trivy/${TRIVY_VERSION}"
+          mkdir -p "$cache_dir"
+
+          if [ -f "$cache_dir/trivy.exe" ]; then
+            echo "Using cached Trivy ${TRIVY_VERSION} from $cache_dir"
+            cp "$cache_dir/trivy.exe" .bin/trivy/trivy.exe
+          else
+            echo "Downloading Trivy ${TRIVY_VERSION} from $url"
+            # Network on the self-hosted runner is occasionally flaky against
+            # github.com (curl error 56: Recv failure: Connection was reset).
+            # Wrap curl in an outer bash retry loop on top of curl --retry,
+            # so even sustained network blips eventually succeed.
+            ok=0
+            for attempt in 1 2 3 4 5 6 7 8; do
+              echo "Attempt $attempt/8 ..."
+              if curl -sSL --fail \
+                --retry 3 \
+                --retry-delay 5 \
+                --retry-all-errors \
+                --connect-timeout 30 \
+                --max-time 180 \
+                "$url" -o ".bin/trivy/${archive}"; then
+                ok=1
+                break
+              fi
+              echo "Download failed; sleeping before next attempt."
+              sleep 15
+            done
+            if [ "$ok" -ne 1 ]; then
+              echo "Trivy download failed after repeated retries."
+              exit 1
+            fi
+            (cd .bin/trivy && unzip -o "${archive}" >/dev/null)
+            cp .bin/trivy/trivy.exe "$cache_dir/trivy.exe"
+          fi
           ./.bin/trivy/trivy.exe --version
 
       - name: Run Trivy in fs mode
@@ -163,15 +190,40 @@ jobs:
           archive="trivy_${TRIVY_VERSION}_windows-64bit.zip"
           url="https://github.com/aquasecurity/trivy/releases/download/v${TRIVY_VERSION}/${archive}"
           mkdir -p .bin/trivy
-          # See trivy-fs job for the rationale behind the retry flags.
-          curl -sSL --fail \
-            --retry 5 \
-            --retry-delay 5 \
-            --retry-all-errors \
-            --connect-timeout 30 \
-            --max-time 300 \
-            "$url" -o ".bin/trivy/${archive}"
-          (cd .bin/trivy && unzip -o "${archive}" >/dev/null)
+
+          # Cache the binary in the runner's persistent tool cache so we do
+          # not have to redownload it every job. See trivy-fs for details.
+          cache_dir="${RUNNER_TOOL_CACHE:-$HOME/_tool}/trivy/${TRIVY_VERSION}"
+          mkdir -p "$cache_dir"
+
+          if [ -f "$cache_dir/trivy.exe" ]; then
+            echo "Using cached Trivy ${TRIVY_VERSION} from $cache_dir"
+            cp "$cache_dir/trivy.exe" .bin/trivy/trivy.exe
+          else
+            echo "Downloading Trivy ${TRIVY_VERSION} from $url"
+            ok=0
+            for attempt in 1 2 3 4 5 6 7 8; do
+              echo "Attempt $attempt/8 ..."
+              if curl -sSL --fail \
+                --retry 3 \
+                --retry-delay 5 \
+                --retry-all-errors \
+                --connect-timeout 30 \
+                --max-time 180 \
+                "$url" -o ".bin/trivy/${archive}"; then
+                ok=1
+                break
+              fi
+              echo "Download failed; sleeping before next attempt."
+              sleep 15
+            done
+            if [ "$ok" -ne 1 ]; then
+              echo "Trivy download failed after repeated retries."
+              exit 1
+            fi
+            (cd .bin/trivy && unzip -o "${archive}" >/dev/null)
+            cp .bin/trivy/trivy.exe "$cache_dir/trivy.exe"
+          fi
           ./.bin/trivy/trivy.exe --version
 
       - name: Run Trivy on configs
@@ -239,15 +291,39 @@ jobs:
           archive="gitleaks_${GITLEAKS_VERSION}_windows_x64.zip"
           url="https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/${archive}"
           mkdir -p .bin/gitleaks
-          # See trivy-fs job for the rationale behind the retry flags.
-          curl -sSL --fail \
-            --retry 5 \
-            --retry-delay 5 \
-            --retry-all-errors \
-            --connect-timeout 30 \
-            --max-time 300 \
-            "$url" -o ".bin/gitleaks/${archive}"
-          (cd .bin/gitleaks && unzip -o "${archive}" >/dev/null)
+
+          # Cache binary in RUNNER_TOOL_CACHE; see trivy-fs job for details.
+          cache_dir="${RUNNER_TOOL_CACHE:-$HOME/_tool}/gitleaks/${GITLEAKS_VERSION}"
+          mkdir -p "$cache_dir"
+
+          if [ -f "$cache_dir/gitleaks.exe" ]; then
+            echo "Using cached gitleaks ${GITLEAKS_VERSION} from $cache_dir"
+            cp "$cache_dir/gitleaks.exe" .bin/gitleaks/gitleaks.exe
+          else
+            echo "Downloading gitleaks ${GITLEAKS_VERSION} from $url"
+            ok=0
+            for attempt in 1 2 3 4 5 6 7 8; do
+              echo "Attempt $attempt/8 ..."
+              if curl -sSL --fail \
+                --retry 3 \
+                --retry-delay 5 \
+                --retry-all-errors \
+                --connect-timeout 30 \
+                --max-time 180 \
+                "$url" -o ".bin/gitleaks/${archive}"; then
+                ok=1
+                break
+              fi
+              echo "Download failed; sleeping before next attempt."
+              sleep 15
+            done
+            if [ "$ok" -ne 1 ]; then
+              echo "gitleaks download failed after repeated retries."
+              exit 1
+            fi
+            (cd .bin/gitleaks && unzip -o "${archive}" >/dev/null)
+            cp .bin/gitleaks/gitleaks.exe "$cache_dir/gitleaks.exe"
+          fi
           ./.bin/gitleaks/gitleaks.exe version
 
       - name: Run gitleaks
