@@ -87,7 +87,17 @@ jobs:
           archive="trivy_${TRIVY_VERSION}_windows-64bit.zip"
           url="https://github.com/aquasecurity/trivy/releases/download/v${TRIVY_VERSION}/${archive}"
           mkdir -p .bin/trivy
-          curl -sSL --fail "$url" -o ".bin/trivy/${archive}"
+          # Network on the self-hosted runner is occasionally flaky against
+          # github.com (curl error 56: Recv failure: Connection was reset).
+          # Retry up to 5 times with exponential-ish backoff so a single
+          # transient TCP reset does not fail the whole job.
+          curl -sSL --fail \
+            --retry 5 \
+            --retry-delay 5 \
+            --retry-all-errors \
+            --connect-timeout 30 \
+            --max-time 300 \
+            "$url" -o ".bin/trivy/${archive}"
           (cd .bin/trivy && unzip -o "${archive}" >/dev/null)
           ./.bin/trivy/trivy.exe --version
 
@@ -153,7 +163,14 @@ jobs:
           archive="trivy_${TRIVY_VERSION}_windows-64bit.zip"
           url="https://github.com/aquasecurity/trivy/releases/download/v${TRIVY_VERSION}/${archive}"
           mkdir -p .bin/trivy
-          curl -sSL --fail "$url" -o ".bin/trivy/${archive}"
+          # See trivy-fs job for the rationale behind the retry flags.
+          curl -sSL --fail \
+            --retry 5 \
+            --retry-delay 5 \
+            --retry-all-errors \
+            --connect-timeout 30 \
+            --max-time 300 \
+            "$url" -o ".bin/trivy/${archive}"
           (cd .bin/trivy && unzip -o "${archive}" >/dev/null)
           ./.bin/trivy/trivy.exe --version
 
@@ -222,7 +239,14 @@ jobs:
           archive="gitleaks_${GITLEAKS_VERSION}_windows_x64.zip"
           url="https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/${archive}"
           mkdir -p .bin/gitleaks
-          curl -sSL --fail "$url" -o ".bin/gitleaks/${archive}"
+          # See trivy-fs job for the rationale behind the retry flags.
+          curl -sSL --fail \
+            --retry 5 \
+            --retry-delay 5 \
+            --retry-all-errors \
+            --connect-timeout 30 \
+            --max-time 300 \
+            "$url" -o ".bin/gitleaks/${archive}"
           (cd .bin/gitleaks && unzip -o "${archive}" >/dev/null)
           ./.bin/gitleaks/gitleaks.exe version
 
