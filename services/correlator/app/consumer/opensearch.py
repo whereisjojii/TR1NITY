@@ -1,15 +1,19 @@
 """OpenSearch EventConsumer.
 
-Polls ``tr1nity-events-*`` for new documents using a simple
-``range`` query keyed on ``@timestamp``. We deliberately use the
-high-water-mark pattern instead of OpenSearch's PIT/scroll: it is
-trivially restartable, works without admin privileges, and never
-gets stuck on a stale scroll cursor.
+Polls ``tr1nity-events-*`` for new documents using a ``range`` query
+keyed on ``@timestamp``. We deliberately use the high-water-mark
+pattern instead of OpenSearch's PIT/scroll: it is trivially restartable,
+works without admin privileges, and never gets stuck on a stale scroll
+cursor.
 
-The consumer keeps the high-water-mark in process memory only —
-operators get at-least-once delivery with no duplicates within one
-process lifetime, and on restart the correlator simply starts from
-"now" and replays via ``replay_from`` if needed.
+Delivery semantics: at-least-once during a single process lifetime,
+with **no skipped events at boundary timestamps**. The query uses
+``gte`` (so events sharing the high-water timestamp are not lost when a
+batch boundary lands mid-millisecond), and a per-boundary set of seen
+``_id`` values is carried across calls so those re-fetched documents
+are filtered out before they reach the pipeline. On restart the
+correlator starts from "now" and operators can rewind with
+``replay_from`` if needed.
 """
 
 from __future__ import annotations
@@ -38,6 +42,10 @@ class OpenSearchEventConsumer:
     transport: httpx.BaseTransport | None = None
     _client: httpx.Client | None = field(default=None, init=False, repr=False)
     _high_water: datetime | None = field(default=None, init=False)
+    # ``_id``s seen at exactly ``_high_water``. We re-query inclusively
+    # (``gte``) and filter these out so events sharing the boundary
+    # timestamp are never permanently skipped.
+    _seen_at_boundary: set[str] = field(default_factory=set, init=False)
 
     def _http(self) -> httpx.Client:
         if self._client is None:
@@ -59,8 +67,9 @@ class OpenSearchEventConsumer:
             self._client = None
 
     def replay_from(self, start: datetime) -> None:
-        """Reset the high-water-mark; next ``fetch`` returns events newer than ``start``."""
+        """Reset the high-water-mark; next ``fetch`` returns events at or after ``start``."""
         self._high_water = start
+        self._seen_at_boundary = set()
 
     def fetch(self, *, max_events: int) -> list[dict[str, Any]]:
         # Default high-water on first call: "now" minus a small grace
@@ -70,8 +79,10 @@ class OpenSearchEventConsumer:
 
         query = {
             "size": int(max_events),
-            "sort": [{"@timestamp": {"order": "asc"}}],
-            "query": {"range": {"@timestamp": {"gt": self._high_water.isoformat()}}},
+            # Sort by timestamp then document id so two events sharing a
+            # timestamp have a deterministic ordering inside the batch.
+            "sort": [{"@timestamp": {"order": "asc"}}, {"_id": {"order": "asc"}}],
+            "query": {"range": {"@timestamp": {"gte": self._high_water.isoformat()}}},
         }
 
         try:
@@ -100,11 +111,19 @@ class OpenSearchEventConsumer:
         hits = (payload.get("hits") or {}).get("hits") or []
         out: list[dict[str, Any]] = []
         latest = self._high_water
+        new_boundary_ids: set[str] = set()
         for hit in hits:
             src = hit.get("_source")
             if not isinstance(src, dict):
                 continue
+            doc_id = str(hit.get("_id") or "")
+
+            # Drop documents we already returned at the previous boundary.
+            if doc_id and doc_id in self._seen_at_boundary:
+                continue
+
             out.append(src)
+
             ts = src.get("@timestamp") or src.get("timestamp")
             if isinstance(ts, str):
                 try:
@@ -113,6 +132,15 @@ class OpenSearchEventConsumer:
                     continue
                 if latest is None or parsed > latest:
                     latest = parsed
+                    new_boundary_ids = {doc_id} if doc_id else set()
+                elif parsed == latest and doc_id:
+                    new_boundary_ids.add(doc_id)
+
         if latest is not None:
-            self._high_water = latest
+            if latest != self._high_water:
+                self._high_water = latest
+                self._seen_at_boundary = new_boundary_ids
+            else:
+                # No timestamp progress this batch — extend the boundary set.
+                self._seen_at_boundary |= new_boundary_ids
         return out

@@ -23,12 +23,12 @@ from fastapi import FastAPI, HTTPException, status
 
 from . import __version__
 from .config import get_settings
-from .consumer import InMemoryEventConsumer
+from .consumer import EventConsumer, InMemoryEventConsumer, OpenSearchEventConsumer
 from .incident import Incident
 from .intel import FileProvider
 from .pipeline import CorrelatorPipeline
 from .sigma import SigmaEngine, load_rules_from_dir
-from .sinks import StdoutIncidentSink
+from .sinks import IncidentSink, OpenSearchIncidentSink, StdoutIncidentSink
 
 log = logging.getLogger(__name__)
 
@@ -37,11 +37,15 @@ START_TIME = time.monotonic()
 
 
 def _default_pipeline() -> CorrelatorPipeline:
-    """Build the default DRY_RUN pipeline used at boot.
+    """Build the pipeline used at boot — DRY_RUN by default, real OpenSearch when opted-in.
 
-    The bundled SIGMA rule pack ships under ``app/sigma/rules`` and the
-    starter IOC list under ``app/intel/data/ioc.json``. Operators can
-    override either path via env vars without touching code.
+    Mirrors the ingestor pattern (see ``services/ingestor/app/dependencies.py``):
+    in DRY_RUN we read from an in-memory queue and write to stdout; with
+    ``DRY_RUN=false`` we read from ``tr1nity-events-*`` and write to
+    ``tr1nity-incidents-YYYY.MM.dd``. The bundled SIGMA rule pack ships
+    under ``app/sigma/rules`` and the starter IOC list under
+    ``app/intel/data/ioc.json``. Operators can override either path via
+    env vars without touching code.
     """
     settings = get_settings()
 
@@ -56,9 +60,39 @@ def _default_pipeline() -> CorrelatorPipeline:
         ioc_path = Path(__file__).parent / "intel" / "data" / "ioc.json"
         intel_providers.append(FileProvider.from_file(ioc_path))
 
+    consumer: EventConsumer
+    sinks: list[IncidentSink]
+    if settings.dry_run:
+        log.info("Correlator running in DRY_RUN mode — events from memory, incidents to stdout.")
+        consumer = InMemoryEventConsumer()
+        sinks = [StdoutIncidentSink()]
+    else:
+        log.info(
+            "Correlator wired to OpenSearch at %s (events: %s, incidents prefix: %s).",
+            settings.opensearch_url,
+            settings.events_index_pattern,
+            settings.incidents_index_prefix,
+        )
+        consumer = OpenSearchEventConsumer(
+            base_url=settings.opensearch_url,
+            index_pattern=settings.events_index_pattern,
+            username=settings.opensearch_username,
+            password=settings.opensearch_password.get_secret_value(),
+            verify_tls=settings.opensearch_verify_tls,
+        )
+        sinks = [
+            OpenSearchIncidentSink(
+                base_url=settings.opensearch_url,
+                username=settings.opensearch_username,
+                password=settings.opensearch_password.get_secret_value(),
+                verify_tls=settings.opensearch_verify_tls,
+                index_prefix=settings.incidents_index_prefix,
+            )
+        ]
+
     return CorrelatorPipeline.assemble(
-        consumer=InMemoryEventConsumer(),
-        sinks=[StdoutIncidentSink()],
+        consumer=consumer,
+        sinks=sinks,
         sigma_engine=sigma_engine,
         intel_providers=intel_providers,
         intel_ttl_seconds=settings.intel_cache_ttl_seconds,

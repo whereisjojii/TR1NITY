@@ -14,8 +14,21 @@ from __future__ import annotations
 
 import time
 from dataclasses import dataclass, field
+from typing import Protocol, runtime_checkable
 
 from .base import IntelHit, Provider
+
+
+@runtime_checkable
+class TimeSource(Protocol):
+    """Anything that exposes a callable ``time()`` returning seconds-since-epoch.
+
+    Lets tests inject a fake clock without ``time.sleep`` and without
+    monkeypatching the global ``time`` module. Both the real ``time``
+    module and ``types.SimpleNamespace(time=lambda: ...)`` satisfy this.
+    """
+
+    def time(self) -> float: ...
 
 
 @dataclass(slots=True)
@@ -28,19 +41,18 @@ class _Entry:
 class IntelCache:
     """Wrap a list of providers with TTL caching.
 
-    ``ttl_seconds`` is the cache lifetime; ``time_source`` is injectable
-    for tests so we don't have to ``time.sleep`` to expire entries.
+    ``ttl_seconds`` is the cache lifetime; ``time_source`` is any object
+    matching the ``TimeSource`` protocol — injectable for tests so we
+    don't have to ``time.sleep`` to expire entries.
     """
 
     providers: list[Provider]
     ttl_seconds: int = 3600
-    time_source: object = field(default_factory=lambda: time)
+    time_source: TimeSource = field(default_factory=lambda: time)
     _store: dict[tuple[str, str, str], _Entry] = field(default_factory=dict)
 
     def _now(self) -> float:
-        # ``time_source`` may be the real ``time`` module or a fake with
-        # a callable ``time()`` (e.g. ``types.SimpleNamespace(time=...)``).
-        return float(self.time_source.time())  # type: ignore[attr-defined]
+        return float(self.time_source.time())
 
     def _lookup(self, kind: str, indicator: str) -> list[IntelHit]:
         if not self.providers:
