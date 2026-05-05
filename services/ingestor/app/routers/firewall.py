@@ -46,7 +46,7 @@ async def ingest_syslog(
 
     if not parsed:
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             detail={"received": len(body.lines), "parse_errors": parse_errors[:25]},
         )
 

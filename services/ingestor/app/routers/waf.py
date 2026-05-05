@@ -44,7 +44,7 @@ async def ingest_waf(
 
     if not parsed:
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             detail={"received": len(payloads), "parse_errors": parse_errors},
         )
 
