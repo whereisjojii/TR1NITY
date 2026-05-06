@@ -1,7 +1,7 @@
 [project]
 name = "tr1nity-api"
-version = "0.1.0"
-description = "TR1NITY api service — Phase 0"
+version = "0.4.0"
+description = "TR1NITY api service — Phase 3 (Cockpit gateway)"
 readme = "README.md"
 requires-python = ">=3.11"
 license = { text = "MIT" }
@@ -14,8 +14,15 @@ src = ["app", "tests"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "B", "UP", "N", "PT", "SIM"]
-ignore = []
+ignore = [
+  "B008",   # function-call-in-default-argument: required by FastAPI Depends()
+  "PT011",  # pytest.raises is intentionally broad — ValueError covers the contract
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["E501"]  # tolerate long lines in test fixtures/assertions
 
 [tool.pytest.ini_options]
 addopts = "-q"
 testpaths = ["tests"]
+asyncio_mode = "auto"

@@ -129,7 +129,7 @@ Net recurring cost to run TR1NITY: **$0**.
 | 0 — Foundation             | W1     | `v0.1.0-foundation`  | Repo, Docker Compose skeleton, CI, MkDocs    | Shipped |
 | 1 — Multi-source Ingestion | W2–3   | `v0.2.0-ingest`      | Wazuh + firewall + WAF → unified ECS index   | Shipped |
 | 2 — The Brain              | W4–7   | `v0.3.0-correlation` | Correlation, ATT&CK, threat-intel, SIGMA     | Shipped |
-| 3 — The Cockpit            | W8–11  | `v0.4.0-cockpit`     | React analyst UI, heatmap, similar-incidents | Pending |
+| 3 — The Cockpit            | W8–11  | `v0.4.0-cockpit`     | React analyst UI, heatmap, similar-incidents | Shipped |
 | 4 — FP Loop & Runbooks     | W12–13 | `v0.5.0-feedback`    | 3-layer FP pipeline, 15 runbooks             | Pending |
 | 5 — AI Assist              | W14–15 | `v0.6.0-ai`          | Foundation-Sec-8B + RAG, async drafting      | Pending |
 | 6 — Polish & Launch        | W16    | `v1.0.0`             | Compliance PDFs, metrics, demo video         | Pending |
