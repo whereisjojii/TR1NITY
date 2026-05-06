@@ -35,7 +35,7 @@ jobs:
     name: Build MkDocs site
     runs-on: [self-hosted, tr1nity, windows]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Install MkDocs Material
         run: |
