@@ -7,7 +7,8 @@ COMPOSE        := docker compose -f deploy/docker-compose.yml
 PROJECT_NAME   := tr1nity
 
 .PHONY: help up down restart logs ps build pull clean demo \
-        test lint format hooks docs docs-serve
+        test lint format hooks docs docs-serve \
+        ui-install ui-dev ui-build ui-test ui-lint ui-typecheck ui-clean
 
 help: ## Show this help
 	@echo ""
@@ -72,6 +73,32 @@ lint: ## Lint all services with ruff
 
 format: ## Auto-format all Python code
 	ruff format services/
+
+# ---------------- Cockpit UI ----------------
+
+UI_DIR := ui
+PNPM   ?= pnpm
+
+ui-install: ## Install Cockpit UI dependencies (pnpm)
+	@cd $(UI_DIR) && $(PNPM) install
+
+ui-dev: ## Run the Cockpit UI in dev mode (Vite, HMR on :5173)
+	@cd $(UI_DIR) && $(PNPM) dev
+
+ui-build: ## Build the Cockpit UI for production (output: ui/dist/)
+	@cd $(UI_DIR) && $(PNPM) build
+
+ui-test: ## Run Cockpit UI unit tests (vitest)
+	@cd $(UI_DIR) && $(PNPM) test
+
+ui-lint: ## Lint the Cockpit UI (eslint)
+	@cd $(UI_DIR) && $(PNPM) lint
+
+ui-typecheck: ## Type-check the Cockpit UI without emitting
+	@cd $(UI_DIR) && $(PNPM) typecheck
+
+ui-clean: ## Remove Cockpit UI build artifacts
+	@rm -rf $(UI_DIR)/dist $(UI_DIR)/node_modules
 
 # ---------------- Dev workflow ----------------
 

@@ -1,0 +1,67 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    color-scheme: dark;
+  }
+  html,
+  body,
+  #root {
+    height: 100%;
+  }
+  body {
+    font-feature-settings:
+      "ss01" on,
+      "cv11" on;
+  }
+}
+
+@layer components {
+  .severity-pill {
+    @apply inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[11px] font-mono uppercase tracking-wide;
+  }
+  .severity-0,
+  .severity-1,
+  .severity-2 {
+    @apply bg-muted text-muted-foreground;
+  }
+  .severity-3 {
+    @apply bg-success/15 text-success;
+  }
+  .severity-4 {
+    @apply bg-warning/15 text-warning;
+  }
+  .severity-5 {
+    @apply bg-warning/25 text-warning;
+  }
+  .severity-6 {
+    @apply bg-danger/20 text-danger;
+  }
+  .severity-7 {
+    @apply bg-critical/25 text-critical;
+  }
+
+  .kbd {
+    @apply inline-flex items-center justify-center rounded border border-border bg-muted px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground;
+  }
+
+  .card {
+    @apply rounded-lg border border-border bg-card-bg shadow-sm;
+  }
+
+  .btn {
+    @apply inline-flex items-center gap-1.5 rounded border border-border bg-muted px-3 py-1.5 text-sm font-medium text-foreground transition-colors hover:bg-border focus:outline-none focus:ring-1 focus:ring-accent disabled:opacity-50;
+  }
+  .btn-primary {
+    @apply bg-accent text-accent-foreground hover:bg-accent/80;
+  }
+  .btn-danger {
+    @apply border-danger/40 bg-danger/10 text-danger hover:bg-danger/25;
+  }
+
+  .row-selected {
+    @apply bg-accent/10 outline outline-1 outline-accent;
+  }
+}

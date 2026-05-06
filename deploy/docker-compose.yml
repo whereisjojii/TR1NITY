@@ -260,7 +260,7 @@ services:
     build:
       context: ../services/api
       dockerfile: Dockerfile
-    image: tr1nity/api:0.1.0
+    image: tr1nity/api:0.4.0
     container_name: tr1nity-api
     hostname: api
     <<: *restart
@@ -270,6 +270,17 @@ services:
       INGESTOR_URL: http://ingestor:8001
       CORRELATOR_URL: http://correlator:8002
       AI_ASSIST_URL: http://ai-assist:8003
+      # Phase-3 Cockpit settings
+      TR1NITY_CORRELATOR_URL: http://correlator:8002
+      OPENSEARCH_URL: ${OPENSEARCH_URL:-https://wazuh-indexer:9200}
+      OPENSEARCH_USERNAME: ${OPENSEARCH_USERNAME:-admin}
+      OPENSEARCH_PASSWORD: ${OPENSEARCH_PASSWORD:-ChangeMeAtFirstBoot!}
+      OPENSEARCH_VERIFY_TLS: ${OPENSEARCH_VERIFY_TLS:-false}
+      INCIDENTS_INDEX_PREFIX: ${INCIDENTS_INDEX_PREFIX:-tr1nity-incidents}
+      WS_HEARTBEAT_SECONDS: ${WS_HEARTBEAT_SECONDS:-20}
+      RECENT_INCIDENT_BUFFER: ${RECENT_INCIDENT_BUFFER:-1000}
+      COCKPIT_DEV_ORIGIN: ${COCKPIT_DEV_ORIGIN:-}
+      COCKPIT_STATIC_DIR: ${COCKPIT_STATIC_DIR:-}
     ports:
       - "${TR1NITY_API_PORT:-8000}:8000"
     depends_on:

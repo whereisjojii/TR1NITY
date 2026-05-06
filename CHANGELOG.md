@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — Phase 3 · v0.4.0-cockpit
+- **`services/api` upgraded from Phase-0 hello-world to a Cockpit gateway.** All Phase-0 routes (`/`, `/healthz`, `/readyz`, `/ws` echo) are preserved; the Phase-3 surface is mounted under `/api/*` and `/ws/incidents`.
+- **HTTP API** —
+  - `GET /api/incidents` (queue with FP-score sort + severity / source / technique filters)
+  - `GET /api/incidents/{id}`
+  - `POST /api/incidents/{id}/mark-fp`
+  - `POST /api/incidents/refresh` (triggers a correlator tick + WS broadcast)
+  - `GET /api/incidents/{id}/similar` (Phase-3 deterministic IP / technique heuristic; Phase-5 swaps in ChromaDB cosine similarity)
+  - `GET /api/cases` / `POST /api/cases` / `GET /api/cases/{id}` / `PATCH /api/cases/{id}` / `POST /api/cases/{id}/notes` / `DELETE /api/cases/{id}`
+  - `GET /api/attack/heatmap`
+- **WebSocket** — `/ws/incidents` sends a hello + snapshot on connect, broadcasts `incident.new` events on every refresh, prunes dead clients.
+- **In-process `CockpitStore`** — thread-safe FP-feedback ledger, full case CRUD with note timeline, recent-incidents buffer with dedup. Designed so Phase 4 can swap in Postgres without touching routers.
+- **Upstream clients** — `CorrelatorClient` (proxies `/incidents` and `/correlate`) and `OpenSearchIncidentReader` (read-only fallback when the correlator restarts and clears its in-memory cache).
+- **Incident composition** (`services/api/app/incidents.py`) — merges correlator + recent-buffer + OpenSearch sources, dedupes by id, attaches `fp_score` and `fp_feedback` decoration, sorts (by FP / severity / created / last-event), filters by severity / source / technique. Also computes the ATT&CK heatmap.
+- **`ui/` cockpit** — React 18 + Vite 5 + TypeScript + Tailwind 3, no shadcn-runtime dependency (custom primitives styled with Tailwind). Pages: alert queue, single-pane incident view (Overview / Timeline / Raw / Similar tabs), ATT&CK heatmap (kill-chain ordered, frequency-graded), case manager, help. Vim shortcuts: `j/k`, `g g`, `G`, `o`/Enter, `f`/`t`, `c`, `r`, `1`/`2`/`3`/`?`. Live updates via `/ws/incidents` with 15-second polling fallback.
+- **Tests** — 49 new pytest tests for the api surface (store, incident composition, heatmap, similar ranking, all HTTP routers, WebSocket fan-out, error paths) plus vitest tests for the UI utilities and Vim hook.
+
 ### Added — Phase 2 · v0.3.0-correlation
 - **Incident model** (`services/correlator/app/incident.py`) with `Incident` and `IncidentMember`, severity promotion (max-of-members), and `to_index_doc()` serializer for OpenSearch.
 - **Sliding-window grouping** (`services/correlator/app/grouping.py`) — events sharing a `source.ip` within `INCIDENT_WINDOW_SECONDS` (default 15 min) and below `INCIDENT_MAX_EVENTS` (default 500) collapse into one incident; events without an IP become single-event incidents.

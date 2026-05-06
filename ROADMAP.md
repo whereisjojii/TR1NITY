@@ -61,16 +61,17 @@ This file is the short, version-controlled scoreboard for the build.
 
 **Goal:** an analyst can fully investigate without opening a second tool.
 
-- [ ] React + Vite + Tailwind + shadcn/ui project
-- [ ] Alert queue with FP score sort
-- [ ] Single-pane investigation panel (raw + enrichment + timeline + similar incidents)
-- [ ] MITRE ATT&CK Navigator-style heatmap
-- [ ] "Similar past incidents" semantic search via ChromaDB
-- [ ] Lightweight built-in case manager (alternative to TheHive)
-- [ ] Vim-style keyboard shortcuts (`j/k` navigate, `o` open, `f` mark FP, `c` create case)
-- [ ] WebSocket live updates from `correlator`
+- [x] React + Vite + Tailwind project (`ui/` — shadcn-style primitives, no runtime UI dependency outside lucide-react)
+- [x] `api` upgraded from Phase-0 hello-world to a Cockpit gateway (`/api/incidents`, `/api/cases`, `/api/attack/heatmap`, `/api/incidents/{id}/similar`, `/api/incidents/refresh`)
+- [x] Alert queue with FP-score sort + severity / source filters
+- [x] Single-pane investigation panel (overview + ATT&CK chain + threat-intel + event timeline + raw JSON + similar incidents)
+- [x] MITRE ATT&CK Navigator-style heatmap (live, frequency-graded, grouped by canonical kill chain)
+- [x] Similar-incident heuristic (deterministic IP-overlap + technique Jaccard) — Phase 5 swaps in ChromaDB cosine similarity
+- [x] Lightweight built-in case manager (in-process store; Phase 4 promotes to Postgres without API changes)
+- [x] Vim-style keyboard shortcuts (`j/k` navigate, `g g` / `G` jump, `o`/Enter open, `f`/`t` mark FP/TP, `c` create case, `r` refresh, `1`/`2`/`3`/`?` sidebar nav)
+- [x] WebSocket live updates (`/ws/incidents` fan-out from the api with broadcast on every correlator tick)
 
-**Demo command:** `make up && open http://localhost:8000` → triage 5 incidents in <2 min using only the keyboard.
+**Demo command:** `make up && make ui-dev` → open `http://localhost:5173/cockpit/queue` → triage 5 incidents in <2 min using only the keyboard.
 
 ---
 
