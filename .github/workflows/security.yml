@@ -130,13 +130,32 @@ jobs:
 
       - name: Run Trivy in fs mode
         run: |
-          ./.bin/trivy/trivy.exe fs . \
-            --format sarif \
-            --output trivy-fs.sarif \
-            --severity CRITICAL,HIGH \
-            --ignore-unfixed \
-            --timeout 15m \
-            --exit-code 0
+          set -e
+          # Trivy pulls its vulnerability DB from ghcr.io on every fresh
+          # cache. Self-hosted Windows runners occasionally hit
+          # `context deadline exceeded` on that pull. Retry up to 4 times
+          # before declaring failure so a single network blip does not
+          # fail CI for an unrelated PR.
+          ok=0
+          for attempt in 1 2 3 4; do
+            echo "Attempt $attempt/4 ..."
+            if ./.bin/trivy/trivy.exe fs . \
+                --format sarif \
+                --output trivy-fs.sarif \
+                --severity CRITICAL,HIGH \
+                --ignore-unfixed \
+                --timeout 15m \
+                --exit-code 0; then
+              ok=1
+              break
+            fi
+            echo "Trivy fs scan failed; sleeping 30 s before retry."
+            sleep 30
+          done
+          if [ "$ok" -ne 1 ]; then
+            echo "Trivy fs scan failed after repeated retries."
+            exit 1
+          fi
 
       - name: Ensure SARIF exists
         if: always()
@@ -264,12 +283,27 @@ jobs:
 
       - name: Run Trivy on configs
         run: |
-          ./.bin/trivy/trivy.exe config . \
-            --format sarif \
-            --output trivy-config.sarif \
-            --severity CRITICAL,HIGH \
-            --timeout 15m \
-            --exit-code 0
+          set -e
+          # See trivy-fs job for the rationale; same retry pattern here.
+          ok=0
+          for attempt in 1 2 3 4; do
+            echo "Attempt $attempt/4 ..."
+            if ./.bin/trivy/trivy.exe config . \
+                --format sarif \
+                --output trivy-config.sarif \
+                --severity CRITICAL,HIGH \
+                --timeout 15m \
+                --exit-code 0; then
+              ok=1
+              break
+            fi
+            echo "Trivy config scan failed; sleeping 30 s before retry."
+            sleep 30
+          done
+          if [ "$ok" -ne 1 ]; then
+            echo "Trivy config scan failed after repeated retries."
+            exit 1
+          fi
 
       - name: Ensure SARIF exists
         if: always()
