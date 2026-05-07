@@ -163,12 +163,48 @@ jobs:
           EOF
           fi
 
-      - name: Upload SARIF
+      # Upload SARIF directly via the REST API — using the
+      # github/codeql-action/upload-sarif@v3 action would require pulling
+      # ~50 MB from codeload.github.com on every job, and the self-hosted
+      # Windows runner sees intermittent 100s timeouts on that endpoint.
+      # gzip + base64 + a single curl POST avoids the action download
+      # entirely; only `curl` (already used elsewhere in this workflow) is
+      # required at runtime.
+      - name: Upload SARIF (Trivy fs)
         if: always()
-        uses: github/codeql-action/upload-sarif@v3
-        with:
-          sarif_file: trivy-fs.sarif
-          category: trivy-fs
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          COMMIT_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+          HEAD_REF: ${{ github.event.pull_request && format('refs/heads/{0}', github.event.pull_request.head.ref) || github.ref }}
+        run: |
+          set -e
+          if [ ! -f trivy-fs.sarif ]; then
+            echo "No SARIF file produced; skipping upload."
+            exit 0
+          fi
+          sarif_b64=$(gzip -c trivy-fs.sarif | base64 | tr -d '\n')
+          cat > sarif-payload.json <<EOF
+          {
+            "commit_sha": "${COMMIT_SHA}",
+            "ref": "${HEAD_REF}",
+            "sarif": "${sarif_b64}",
+            "tool_name": "trivy-fs"
+          }
+          EOF
+          http_code=$(curl -sSL -o sarif-resp.json -w "%{http_code}" -X POST \
+            -H "Authorization: token ${GH_TOKEN}" \
+            -H "Accept: application/vnd.github+json" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            -H "Content-Type: application/json" \
+            "https://api.github.com/repos/${GITHUB_REPOSITORY}/code-scanning/sarifs" \
+            --data @sarif-payload.json)
+          echo "SARIF upload HTTP ${http_code}"
+          cat sarif-resp.json
+          echo
+          if [ "$http_code" -ge 400 ]; then
+            echo "SARIF upload failed."
+            exit 1
+          fi
 
   # ----------------------------------------------------------------
   # Trivy config scan (Dockerfiles, Compose, GH Actions)
@@ -260,12 +296,44 @@ jobs:
           EOF
           fi
 
-      - name: Upload SARIF
+      # Upload SARIF via REST API — see Trivy (filesystem) job for the
+      # full rationale (avoids codeql-action download timeouts on the
+      # self-hosted Windows runner).
+      - name: Upload SARIF (Trivy config)
         if: always()
-        uses: github/codeql-action/upload-sarif@v3
-        with:
-          sarif_file: trivy-config.sarif
-          category: trivy-config
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          COMMIT_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+          HEAD_REF: ${{ github.event.pull_request && format('refs/heads/{0}', github.event.pull_request.head.ref) || github.ref }}
+        run: |
+          set -e
+          if [ ! -f trivy-config.sarif ]; then
+            echo "No SARIF file produced; skipping upload."
+            exit 0
+          fi
+          sarif_b64=$(gzip -c trivy-config.sarif | base64 | tr -d '\n')
+          cat > sarif-payload.json <<EOF
+          {
+            "commit_sha": "${COMMIT_SHA}",
+            "ref": "${HEAD_REF}",
+            "sarif": "${sarif_b64}",
+            "tool_name": "trivy-config"
+          }
+          EOF
+          http_code=$(curl -sSL -o sarif-resp.json -w "%{http_code}" -X POST \
+            -H "Authorization: token ${GH_TOKEN}" \
+            -H "Accept: application/vnd.github+json" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            -H "Content-Type: application/json" \
+            "https://api.github.com/repos/${GITHUB_REPOSITORY}/code-scanning/sarifs" \
+            --data @sarif-payload.json)
+          echo "SARIF upload HTTP ${http_code}"
+          cat sarif-resp.json
+          echo
+          if [ "$http_code" -ge 400 ]; then
+            echo "SARIF upload failed."
+            exit 1
+          fi
 
   # ----------------------------------------------------------------
   # Gitleaks secret scanning
@@ -336,9 +404,41 @@ jobs:
             --report-format sarif \
             --report-path gitleaks.sarif
 
-      - name: Upload SARIF
+      # Upload SARIF via REST API — see Trivy (filesystem) job for the
+      # full rationale (avoids codeql-action download timeouts on the
+      # self-hosted Windows runner).
+      - name: Upload SARIF (gitleaks)
         if: always()
-        uses: github/codeql-action/upload-sarif@v3
-        with:
-          sarif_file: gitleaks.sarif
-          category: gitleaks
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          COMMIT_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+          HEAD_REF: ${{ github.event.pull_request && format('refs/heads/{0}', github.event.pull_request.head.ref) || github.ref }}
+        run: |
+          set -e
+          if [ ! -f gitleaks.sarif ]; then
+            echo "No SARIF file produced; skipping upload."
+            exit 0
+          fi
+          sarif_b64=$(gzip -c gitleaks.sarif | base64 | tr -d '\n')
+          cat > sarif-payload.json <<EOF
+          {
+            "commit_sha": "${COMMIT_SHA}",
+            "ref": "${HEAD_REF}",
+            "sarif": "${sarif_b64}",
+            "tool_name": "gitleaks"
+          }
+          EOF
+          http_code=$(curl -sSL -o sarif-resp.json -w "%{http_code}" -X POST \
+            -H "Authorization: token ${GH_TOKEN}" \
+            -H "Accept: application/vnd.github+json" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            -H "Content-Type: application/json" \
+            "https://api.github.com/repos/${GITHUB_REPOSITORY}/code-scanning/sarifs" \
+            --data @sarif-payload.json)
+          echo "SARIF upload HTTP ${http_code}"
+          cat sarif-resp.json
+          echo
+          if [ "$http_code" -ge 400 ]; then
+            echo "SARIF upload failed."
+            exit 1
+          fi
