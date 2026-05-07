@@ -5,6 +5,7 @@ import { HeatmapPage } from "./pages/HeatmapPage";
 import { HelpPage } from "./pages/HelpPage";
 import { IncidentDetailPage } from "./pages/IncidentDetailPage";
 import { QueuePage } from "./pages/QueuePage";
+import { SuppressionsPage } from "./pages/SuppressionsPage";
 
 export default function App(): JSX.Element {
   return (
@@ -15,6 +16,7 @@ export default function App(): JSX.Element {
         <Route path="/incidents/:id" element={<IncidentDetailPage />} />
         <Route path="/heatmap" element={<HeatmapPage />} />
         <Route path="/cases" element={<CasesPage />} />
+        <Route path="/suppressions" element={<SuppressionsPage />} />
         <Route path="/help" element={<HelpPage />} />
         <Route path="*" element={<Navigate to="/queue" replace />} />
       </Routes>

@@ -79,11 +79,11 @@ This file is the short, version-controlled scoreboard for the build.
 
 **Goal:** the platform learns from analyst feedback.
 
-- [ ] Layer 1: deterministic YAML whitelist (vulnerability scanners, monitoring tools, etc.)
-- [ ] Layer 2: sklearn FP classifier — features from alert metadata; trains on analyst "Mark FP" clicks; weekly `make retrain`
-- [ ] Layer 3: analyst-authored suppression rules with TTL and audit trail
-- [ ] 15+ Markdown runbooks (T1110.001 brute force, T1078 valid accounts, T1190 web exploit, etc.)
-- [ ] Auto-attach runbook to incident by primary ATT&CK technique
+- [x] Layer 1: deterministic YAML whitelist (vulnerability scanners, monitoring tools, etc.)
+- [x] Layer 2: sklearn FP classifier — features from alert metadata; trains on analyst "Mark FP" clicks; weekly `make retrain`
+- [x] Layer 3: analyst-authored suppression rules with TTL and audit trail
+- [x] 15+ Markdown runbooks (T1110.001 brute force, T1078 valid accounts, T1190 web exploit, etc.)
+- [x] Auto-attach runbook to incident by primary ATT&CK technique
 
 **Demo command:** mark 50 alerts as FP → `make retrain` → held-out sample shows reduced FP score on similar alerts.
 

@@ -20,6 +20,11 @@ from collections.abc import Iterable
 from datetime import datetime
 from typing import Any, Literal
 
+from .fp.classifier import FPClassifier
+from .fp.scorer import compose_fp_score
+from .fp.suppressions import SuppressionRule
+from .fp.whitelist import WhitelistRule
+from .runbooks import RunbookLibrary
 from .store import CockpitStore
 
 log = logging.getLogger(__name__)
@@ -39,6 +44,10 @@ def compose_incidents(
     cached_items: Iterable[dict[str, Any]] | None,
     opensearch_items: Iterable[dict[str, Any]] | None,
     store: CockpitStore,
+    whitelist: list[WhitelistRule] | None = None,
+    suppressions: list[SuppressionRule] | None = None,
+    classifier: FPClassifier | None = None,
+    runbook_library: RunbookLibrary | None = None,
     sort_by: SortKey = "fp_score",
     descending: bool = False,
     severity_min: int | None = None,
@@ -51,6 +60,10 @@ def compose_incidents(
     Sort default is ``fp_score`` ascending — the Cockpit alert queue
     surfaces the **most likely true positives** first. The roadmap is
     explicit about this and the UI relies on it.
+
+    Phase 4 layers (``whitelist``, ``suppressions``, ``classifier``) are
+    optional — when ``None`` is passed, the function falls back to the
+    Phase-3 store-only behaviour so existing tests stay green.
     """
     merged: dict[str, dict[str, Any]] = {}
 
@@ -73,7 +86,14 @@ def compose_incidents(
 
     out: list[dict[str, Any]] = []
     for raw in merged.values():
-        decorated = _decorate(raw, store)
+        decorated = _decorate(
+            raw,
+            store,
+            whitelist=whitelist,
+            suppressions=suppressions,
+            classifier=classifier,
+            runbook_library=runbook_library,
+        )
         if severity_min is not None and decorated.get("severity", 0) < severity_min:
             continue
         if sources is not None:
@@ -98,13 +118,54 @@ def compose_incidents(
     return out
 
 
-def _decorate(raw: dict[str, Any], store: CockpitStore) -> dict[str, Any]:
-    """Attach analyst-derived fields the api owns."""
+def _decorate(
+    raw: dict[str, Any],
+    store: CockpitStore,
+    *,
+    whitelist: list[WhitelistRule] | None = None,
+    suppressions: list[SuppressionRule] | None = None,
+    classifier: FPClassifier | None = None,
+    runbook_library: RunbookLibrary | None = None,
+) -> dict[str, Any]:
+    """Attach analyst-derived fields the api owns.
+
+    Phase 3 attached only the in-process FP score. Phase 4 layers in
+    Layer-1 / Layer-2 / Layer-3 contributors and a ``runbook_url`` for
+    the incident's primary ATT&CK technique. The Phase-3 ``fp_score``
+    and ``fp_feedback`` fields are preserved verbatim so existing UI
+    code keeps working.
+    """
     iid = raw.get("incident_id")
-    score = store.fp_score(iid) if isinstance(iid, str) and iid else 0.5
-    raw["fp_score"] = score
-    fb = store.get_fp(iid) if isinstance(iid, str) and iid else None
+    have_iid = isinstance(iid, str) and bool(iid)
+    fb = store.get_fp(iid) if have_iid else None
+
+    layered_inputs: dict[str, Any] = {}
+    if whitelist is not None or suppressions is not None or classifier is not None:
+        analyst_score: float | None = None if fb is None else (1.0 if fb.is_fp else 0.0)
+        breakdown = compose_fp_score(
+            raw,
+            whitelist_rules=whitelist,
+            suppression_rules=suppressions,
+            classifier=classifier,
+            analyst_score=analyst_score,
+        )
+        layered_inputs = breakdown.to_dict()
+
+    if layered_inputs:
+        raw["fp_score"] = layered_inputs["fp_score"]
+        raw["fp_layers"] = layered_inputs["fp_layers"]
+    else:
+        raw["fp_score"] = store.fp_score(iid) if have_iid else 0.5
+        raw["fp_layers"] = []
     raw["fp_feedback"] = fb.to_dict() if fb is not None else None
+
+    if runbook_library is not None:
+        techniques = raw.get("technique_ids") or []
+        if isinstance(techniques, list):
+            url = runbook_library.primary_runbook_url([t for t in techniques if isinstance(t, str)])
+            if url is not None:
+                raw["runbook_url"] = url
+
     return raw
 
 

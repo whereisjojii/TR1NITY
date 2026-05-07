@@ -40,7 +40,7 @@ from fastapi.staticfiles import StaticFiles
 
 from . import __version__
 from .config import get_settings
-from .routers import attack, cases, incidents, realtime, similar
+from .routers import attack, cases, incidents, realtime, runbooks, similar, suppressions
 
 logging.basicConfig(
     level=logging.INFO,
@@ -146,6 +146,8 @@ app.include_router(similar.router)
 app.include_router(cases.router)
 app.include_router(attack.router)
 app.include_router(realtime.router)
+app.include_router(runbooks.router)
+app.include_router(suppressions.router)
 
 
 # ---------------------------------------------------------------------------

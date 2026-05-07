@@ -260,7 +260,7 @@ services:
     build:
       context: ../services/api
       dockerfile: Dockerfile
-    image: tr1nity/api:0.4.0
+    image: tr1nity/api:0.5.0
     container_name: tr1nity-api
     hostname: api
     <<: *restart
@@ -281,8 +281,15 @@ services:
       RECENT_INCIDENT_BUFFER: ${RECENT_INCIDENT_BUFFER:-1000}
       COCKPIT_DEV_ORIGIN: ${COCKPIT_DEV_ORIGIN:-}
       COCKPIT_STATIC_DIR: ${COCKPIT_STATIC_DIR:-}
+      # Phase-4 FP loop & runbooks
+      TR1NITY_API_FP_DB: ${TR1NITY_API_FP_DB:-/data/feedback.sqlite}
+      TR1NITY_API_FP_MODEL_PATH: ${TR1NITY_API_FP_MODEL_PATH:-/data/fp_classifier.pkl}
+      TR1NITY_API_FP_WHITELIST: ${TR1NITY_API_FP_WHITELIST:-}
+      TR1NITY_API_RUNBOOKS_DIR: ${TR1NITY_API_RUNBOOKS_DIR:-}
     ports:
       - "${TR1NITY_API_PORT:-8000}:8000"
+    volumes:
+      - api-data:/data
     depends_on:
       ingestor:
         condition: service_healthy
@@ -317,6 +324,8 @@ volumes:
     name: tr1nity-postgres-data
   chromadb-data:
     name: tr1nity-chromadb-data
+  api-data:
+    name: tr1nity-api-data
 
 networks:
   default:

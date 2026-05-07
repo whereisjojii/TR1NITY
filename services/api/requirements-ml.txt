@@ -1,0 +1,6 @@
+# Optional Layer-2 dependencies — only needed to run `make retrain`.
+# Production runtime works without these (the FPClassifier silently
+# returns 0.0 from Layer 2 when joblib/sklearn are missing).
+-r requirements.txt
+scikit-learn==1.5.2
+joblib==1.4.2

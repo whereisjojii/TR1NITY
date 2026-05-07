@@ -78,6 +78,20 @@ class APISettings(BaseSettings):
     # Hard caps to avoid pathological queries.
     incidents_max_page_size: int = Field(default=200, ge=1, le=1000)
 
+    # ---- Phase 4: FP loop & runbooks ---------------------------------
+    # SQLite feedback DB path. Empty string → in-memory (dev/tests).
+    tr1nity_api_fp_db: str = ""
+    # YAML whitelist (Layer 1). Empty string → use the bundled file
+    # next to the module; explicit "off" disables Layer 1 entirely.
+    tr1nity_api_fp_whitelist: str = ""
+    # sklearn classifier model (Layer 2). Empty string → no model yet,
+    # which is fine: the layer is silently skipped until `make retrain`
+    # produces a file.
+    tr1nity_api_fp_model_path: str = ""
+    # Directory containing the markdown runbook library. Empty string
+    # → use the in-repo ``docs/runbooks`` directory.
+    tr1nity_api_runbooks_dir: str = ""
+
 
 @lru_cache(maxsize=1)
 def get_settings() -> APISettings:

@@ -1,0 +1,8 @@
+# Phase-4 FP loop & runbooks runtime data.
+#
+# This directory is the default location for:
+#   - feedback.sqlite           : analyst feedback + suppression rules (TR1NITY_API_FP_DB)
+#   - fp_classifier.pkl         : Layer-2 sklearn model produced by `make retrain`
+#   - fp_classifier_report.json : training report companion
+#
+# The actual data files are gitignored (see top-level .gitignore).
