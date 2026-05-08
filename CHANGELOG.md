@@ -7,6 +7,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — Phase 4 · v0.5.0-feedback
+- **Three-layer FP scoring** (`services/api/app/fp/`) — composite `fp_score` is now `max(L1 whitelist, L2 classifier, L3 suppression, analyst feedback)` with an explainable `fp_layers` breakdown returned on every incident document.
+  - **Layer 1 — YAML whitelist** (`services/api/app/fp/whitelist.py` + `whitelist.yaml`): operator-authored deterministic rules with optional TTL. Bundled examples cover authorized vulnerability scanners and internal monitoring health probes. Override path via `TR1NITY_API_FP_WHITELIST` (`off` disables Layer 1 entirely).
+  - **Layer 2 — sklearn classifier** (`services/api/app/fp/classifier.py` + `features.py` + `train.py`): logistic-regression classifier trained on analyst "Mark FP" clicks via `make retrain`. The runtime gracefully degrades (returns `0.0`) when no model is loaded, so the api ships with the `requirements-ml.txt` extras as opt-in.
+  - **Layer 3 — Suppression rules** (`services/api/app/fp/suppressions.py`): analyst-authored CRUD rules with TTL and audit trail (author + reason). Persisted alongside feedback in SQLite.
+- **SQLite-backed feedback DB** (`services/api/app/fp/db.py`) — `fp_feedback` table snapshots the feature vector at click-time for reproducible classifier training; `suppressions` table stores Layer-3 rules. Default path `services/api/data/feedback.sqlite` (override via `TR1NITY_API_FP_DB`); empty path runs in-memory.
+- **HTTP API** —
+  - `GET /api/runbooks` and `GET /api/runbooks/{technique_id}` (with parent-technique fallback, e.g. `T1110.999` → `T1110`).
+  - `GET /api/suppressions`, `POST /api/suppressions`, `GET /api/suppressions/{id}`, `DELETE /api/suppressions/{id}` — auto-prunes expired rules on every list.
+  - `POST /api/incidents/{id}/mark-fp` — extended to snapshot the incident's feature vector to the SQLite feedback DB so Layer 2 can train on it.
+  - `GET /api/incidents` and `GET /api/incidents/{id}` — every response now carries `fp_score`, `fp_layers[]`, and a `runbook_url` auto-attached by primary ATT&CK technique.
+- **16 ATT&CK runbooks** (`docs/runbooks/`) — Markdown with YAML frontmatter (`technique`, `tactic`, `severity`, `references`) covering brute force (T1110, T1110.001, T1110.003), valid accounts (T1078), exploit public-facing app (T1190), active scanning (T1595), network service discovery (T1046), file & directory discovery (T1083), command-and-scripting interpreter (T1059, T1059.001), credential dumping (T1003), data destruction / ransomware (T1486), phishing (T1566), application-layer C2 (T1071), obfuscated files (T1027), remote system discovery (T1018). All runbooks follow the same four-section structure (Triage → Investigation → Containment → Eradication & lessons).
+- **Cockpit UI** —
+  - New **Runbook tab** on the incident detail page (`ui/src/components/RunbookPanel.tsx`), rendered with `react-markdown` + `remark-gfm`. Auto-fetched by the incident's primary technique.
+  - New **FP-layer breakdown badge** on the Overview tab (`ui/src/components/FPLayerBadge.tsx`) showing every layer that contributed to the score and the per-layer detail (rule name, suppression id, classifier probability).
+  - New **Suppressions page** at `/cockpit/suppressions` (`ui/src/pages/SuppressionsPage.tsx`) — form for creating Layer-3 rules with JSON match expression, TTL, score, author, audit reason; list view with delete action.
+  - Sidebar adds a 4th nav item (key `4`) for Suppressions; version label bumped to `v0.5.0 · Phase 4`.
+- **Operator command** — `make retrain` rebuilds the Layer-2 classifier from the SQLite feedback DB. Refuses to train below the `MIN_SAMPLES` (10) and `MIN_PER_CLASS` (3) thresholds. Writes a JSON training report next to the model.
+- **Docker Compose** — `api` service now mounts `services/api/data` so the SQLite feedback DB and trained model survive container restarts.
+- **Tests** — 38 new pytest tests (whitelist matcher, SQLite DB, suppressions, classifier graceful-degradation, composite scorer, retrain CLI, runbook router, suppression router, layered incident composition); 6 new vitest tests (RunbookPanel, FPLayerBadge, SuppressionsPage form). Total: **191** backend (42 ingestor + 58 correlator + 4 ai-assist + 87 api) + **13** UI tests, all green.
+
 ### Added — Phase 3 · v0.4.0-cockpit
 - **`services/api` upgraded from Phase-0 hello-world to a Cockpit gateway.** All Phase-0 routes (`/`, `/healthz`, `/readyz`, `/ws` echo) are preserved; the Phase-3 surface is mounted under `/api/*` and `/ws/incidents`.
 - **HTTP API** —

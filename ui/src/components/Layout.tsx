@@ -1,4 +1,11 @@
-import { Activity, Layers, ListTodo, Notebook, Target } from "lucide-react";
+import {
+  Activity,
+  Filter,
+  Layers,
+  ListTodo,
+  Notebook,
+  Target,
+} from "lucide-react";
 import type { ReactNode } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
 import { useIncidentsLive } from "../hooks/useIncidentsLive";
@@ -10,6 +17,7 @@ const NAV: { to: string; label: string; icon: typeof Activity; key: string }[] =
     { to: "/queue", label: "Queue", icon: ListTodo, key: "1" },
     { to: "/heatmap", label: "ATT&CK", icon: Target, key: "2" },
     { to: "/cases", label: "Cases", icon: Notebook, key: "3" },
+    { to: "/suppressions", label: "Suppressions", icon: Filter, key: "4" },
     { to: "/help", label: "Help", icon: Layers, key: "?" },
   ];
 
@@ -32,6 +40,11 @@ export function Layout({ children }: { children: ReactNode }): JSX.Element {
       key: "3",
       description: "Go to cases",
       handler: () => navigate("/cases"),
+    },
+    {
+      key: "4",
+      description: "Go to suppressions",
+      handler: () => navigate("/suppressions"),
     },
     {
       key: "?",
@@ -79,7 +92,7 @@ export function Layout({ children }: { children: ReactNode }): JSX.Element {
             <Activity size={12} />
             <span>Live: {live.status}</span>
           </div>
-          <div className="mt-1 font-mono text-[10px]">v0.4.0 · Phase 3</div>
+          <div className="mt-1 font-mono text-[10px]">v0.5.0 · Phase 4</div>
         </div>
       </aside>
       <main className="flex h-full min-w-0 flex-1 flex-col overflow-hidden">

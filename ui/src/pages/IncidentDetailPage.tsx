@@ -4,7 +4,9 @@ import { useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { AttackChain } from "../components/AttackChain";
 import { EventTimeline } from "../components/EventTimeline";
+import { FPLayerBadge } from "../components/FPLayerBadge";
 import { IntelHits } from "../components/IntelHits";
+import { RunbookPanel } from "../components/RunbookPanel";
 import { Topbar } from "../components/Topbar";
 import { useVimShortcuts } from "../hooks/useVimShortcuts";
 import { createCase, getIncident, markFP, similarIncidents } from "../lib/api";
@@ -17,13 +19,14 @@ import {
   severityLabel,
 } from "../lib/utils";
 
-type DetailTab = "overview" | "raw" | "timeline" | "similar";
+type DetailTab = "overview" | "raw" | "timeline" | "similar" | "runbook";
 
 const TABS: { value: DetailTab; label: string; key: string }[] = [
   { value: "overview", label: "Overview", key: "1" },
   { value: "timeline", label: "Timeline", key: "2" },
   { value: "raw", label: "Raw events", key: "3" },
   { value: "similar", label: "Similar", key: "4" },
+  { value: "runbook", label: "Runbook", key: "5" },
 ];
 
 export function IncidentDetailPage(): JSX.Element {
@@ -214,6 +217,12 @@ export function IncidentDetailPage(): JSX.Element {
               </div>
               <div className="mt-4">
                 <h3 className="mb-2 text-xs uppercase tracking-wider text-muted-foreground">
+                  FP score breakdown
+                </h3>
+                <FPLayerBadge layers={incident.fp_layers ?? []} />
+              </div>
+              <div className="mt-4">
+                <h3 className="mb-2 text-xs uppercase tracking-wider text-muted-foreground">
                   SIGMA matches
                 </h3>
                 {incident.sigma_matches && incident.sigma_matches.length > 0 ? (
@@ -277,6 +286,24 @@ export function IncidentDetailPage(): JSX.Element {
             <pre className="max-h-[60vh] overflow-auto p-4 font-mono text-[11px] leading-snug text-foreground">
               {JSON.stringify(incident, null, 2)}
             </pre>
+          </section>
+        ) : null}
+        {tab === "runbook" ? (
+          <section className="card p-4 lg:col-span-2">
+            <h2 className="mb-2 text-sm font-semibold text-foreground">
+              Response runbook
+            </h2>
+            <p className="mb-3 text-xs text-muted-foreground">
+              Auto-attached based on the primary ATT&amp;CK technique. Edit
+              under <code className="font-mono">docs/runbooks/</code>.
+            </p>
+            {incident.technique_ids.length > 0 ? (
+              <RunbookPanel techniqueId={incident.technique_ids[0]} />
+            ) : (
+              <div className="text-sm text-muted-foreground">
+                Incident has no ATT&amp;CK technique attached.
+              </div>
+            )}
           </section>
         ) : null}
         {tab === "similar" ? (

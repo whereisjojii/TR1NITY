@@ -7,7 +7,7 @@ COMPOSE        := docker compose -f deploy/docker-compose.yml
 PROJECT_NAME   := tr1nity
 
 .PHONY: help up down restart logs ps build pull clean demo \
-        test lint format hooks docs docs-serve \
+        test lint format hooks docs docs-serve retrain \
         ui-install ui-dev ui-build ui-test ui-lint ui-typecheck ui-clean
 
 help: ## Show this help
@@ -73,6 +73,26 @@ lint: ## Lint all services with ruff
 
 format: ## Auto-format all Python code
 	ruff format services/
+
+# ---------------- Phase 4: FP loop ----------------
+
+# `make retrain` rebuilds the Layer-2 sklearn classifier from analyst
+# feedback. Defaults to the in-repo paths; override via env vars to
+# point at a production volume.
+TR1NITY_API_FP_DB        ?= services/api/data/feedback.sqlite
+TR1NITY_API_FP_MODEL     ?= services/api/data/fp_classifier.pkl
+TR1NITY_API_FP_REPORT    ?= services/api/data/fp_classifier_report.json
+
+retrain: ## Retrain the FP classifier (Layer 2) from feedback DB
+	@if [ ! -f $(TR1NITY_API_FP_DB) ]; then \
+	    echo "Feedback DB $(TR1NITY_API_FP_DB) not found. Mark some incidents as FP first."; \
+	    exit 1; \
+	fi
+	@cd services/api && pip install -q -r requirements-ml.txt && \
+	    python -m app.fp.train \
+	        --db $(abspath $(TR1NITY_API_FP_DB)) \
+	        --model $(abspath $(TR1NITY_API_FP_MODEL)) \
+	        --report $(abspath $(TR1NITY_API_FP_REPORT))
 
 # ---------------- Cockpit UI ----------------
 

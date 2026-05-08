@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Iterator
+from pathlib import Path
 from typing import Any
 
 import httpx
@@ -15,12 +16,15 @@ from app.dependencies import (
     get_store_dep,
     reset_dependency_caches,
 )
+from app.fp.classifier import FPClassifier, replace_classifier
+from app.fp.db import FeedbackDB, replace_feedback_db
 from app.main import app as fastapi_app
 from app.realtime import (
     ConnectionManager,
     get_connection_manager,
     replace_connection_manager,
 )
+from app.runbooks import RunbookLibrary, replace_runbook_library
 from app.store import CockpitStore, replace_store
 from fastapi.testclient import TestClient
 
@@ -96,10 +100,16 @@ def _reset_singletons() -> Iterator[None]:
     reset_dependency_caches()
     replace_store(CockpitStore())
     replace_connection_manager(ConnectionManager())
+    replace_feedback_db(FeedbackDB())
+    replace_classifier(FPClassifier(model_path=None))
+    bundled_runbooks = Path(__file__).resolve().parents[3] / "docs" / "runbooks"
+    replace_runbook_library(RunbookLibrary(runbooks_dir=bundled_runbooks))
     yield
     reset_dependency_caches()
     replace_store(CockpitStore())
     replace_connection_manager(ConnectionManager())
+    replace_feedback_db(FeedbackDB())
+    replace_classifier(FPClassifier(model_path=None))
     fastapi_app.dependency_overrides.clear()
 
 

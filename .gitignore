@@ -18,6 +18,12 @@ UNSW-NB15/
 !services/correlator/app/intel/data/
 !services/correlator/app/intel/data/*.json
 
+# Re-allow the api service's data/ directory placeholder so the
+# Phase-4 SQLite feedback DB has somewhere to land on first boot.
+# The actual *.sqlite / *.pkl files stay ignored via the patterns above.
+!services/api/data/
+!services/api/data/.gitkeep
+
 # ---- ML models (NEVER committed; published as GitHub Release assets) ----
 models/
 *.pkl

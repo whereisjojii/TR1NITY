@@ -22,12 +22,22 @@ from ..clients.opensearch import OpenSearchIncidentReader
 from ..config import APISettings
 from ..dependencies import (
     get_correlator_client,
+    get_feedback_db_dep,
+    get_fp_classifier_dep,
     get_opensearch_reader,
+    get_runbook_library_dep,
     get_settings_dep,
     get_store_dep,
+    get_whitelist_dep,
 )
+from ..fp.classifier import FPClassifier
+from ..fp.db import FeedbackDB
+from ..fp.features import extract_features
+from ..fp.suppressions import SuppressionRule
+from ..fp.whitelist import WhitelistRule
 from ..incidents import compose_incidents
 from ..realtime import ConnectionManager, get_connection_manager
+from ..runbooks import RunbookLibrary
 from ..store import CockpitStore, FPFeedback
 
 log = logging.getLogger(__name__)
@@ -100,6 +110,13 @@ def _gather_sources(
     return correlator_items, cached_items, persisted_items
 
 
+def _load_active_suppressions(db: FeedbackDB) -> list[SuppressionRule]:
+    """Prune expired rows then return the active rules as dataclasses."""
+    db.prune_expired()
+    rows = db.list_suppressions()
+    return [SuppressionRule.from_row(r) for r in rows]
+
+
 @router.get("", response_model=IncidentListResponse)
 def list_incidents(
     *,
@@ -114,6 +131,10 @@ def list_incidents(
     opensearch: OpenSearchIncidentReader = Depends(get_opensearch_reader),
     settings: APISettings = Depends(get_settings_dep),
     store: CockpitStore = Depends(get_store_dep),
+    whitelist: tuple[WhitelistRule, ...] = Depends(get_whitelist_dep),
+    classifier: FPClassifier = Depends(get_fp_classifier_dep),
+    db: FeedbackDB = Depends(get_feedback_db_dep),
+    runbooks: RunbookLibrary = Depends(get_runbook_library_dep),
 ) -> IncidentListResponse:
     """List incidents available to the Cockpit, sorted for triage.
 
@@ -132,6 +153,10 @@ def list_incidents(
         cached_items=cached_items,
         opensearch_items=persisted_items,
         store=store,
+        whitelist=list(whitelist),
+        suppressions=_load_active_suppressions(db),
+        classifier=classifier,
+        runbook_library=runbooks,
         sort_by=sort_by,
         descending=descending,
         severity_min=severity_min,
@@ -154,6 +179,10 @@ def get_incident(
     opensearch: OpenSearchIncidentReader = Depends(get_opensearch_reader),
     settings: APISettings = Depends(get_settings_dep),
     store: CockpitStore = Depends(get_store_dep),
+    whitelist: tuple[WhitelistRule, ...] = Depends(get_whitelist_dep),
+    classifier: FPClassifier = Depends(get_fp_classifier_dep),
+    db: FeedbackDB = Depends(get_feedback_db_dep),
+    runbooks: RunbookLibrary = Depends(get_runbook_library_dep),
 ) -> dict[str, Any]:
     """Return a single incident, decorated with FP score and feedback."""
     correlator_items, cached_items, persisted_items = _gather_sources(
@@ -168,6 +197,10 @@ def get_incident(
         cached_items=cached_items,
         opensearch_items=persisted_items,
         store=store,
+        whitelist=list(whitelist),
+        suppressions=_load_active_suppressions(db),
+        classifier=classifier,
+        runbook_library=runbooks,
     )
     for inc in items:
         if inc.get("incident_id") == incident_id:
@@ -183,11 +216,16 @@ def mark_fp(
     incident_id: str,
     payload: FPMarkRequest,
     store: CockpitStore = Depends(get_store_dep),
+    db: FeedbackDB = Depends(get_feedback_db_dep),
+    correlator: CorrelatorClient = Depends(get_correlator_client),
+    opensearch: OpenSearchIncidentReader = Depends(get_opensearch_reader),
+    settings: APISettings = Depends(get_settings_dep),
 ) -> FPMarkResponse:
     """Record analyst FP feedback for an incident.
 
-    Phase 3 stores the feedback in process; Phase 4 persists to Postgres
-    and feeds the sklearn classifier on weekly retrain.
+    Phase 3 stored the feedback in process; Phase 4 also writes a
+    feature snapshot to the SQLite feedback DB so ``make retrain`` can
+    train the Layer-2 classifier on it.
     """
     feedback = store.record_fp(
         FPFeedback(
@@ -198,6 +236,34 @@ def mark_fp(
             submitted_by=payload.submitted_by or "anonymous",
         )
     )
+
+    # Snapshot the incident's feature vector so the trainer has labelled
+    # data to learn from. Best-effort: a missing incident or unreachable
+    # correlator must never block the analyst's FP click.
+    features: dict[str, Any] = {}
+    try:
+        correlator_items, cached_items, persisted_items = _gather_sources(
+            correlator=correlator,
+            opensearch=opensearch,
+            settings=settings,
+            store=store,
+            include_persisted=True,
+        )
+        for inc in list(correlator_items) + list(cached_items) + list(persisted_items):
+            if isinstance(inc, dict) and inc.get("incident_id") == incident_id:
+                features = extract_features(inc)
+                break
+    except Exception as exc:  # pragma: no cover - defensive
+        log.warning("mark_fp: feature snapshot failed: %s", exc)
+
+    db.record_feedback(
+        incident_id=incident_id,
+        is_fp=payload.is_fp,
+        reason=payload.reason,
+        submitted_by=payload.submitted_by or "anonymous",
+        features=features,
+    )
+
     return FPMarkResponse(
         incident_id=incident_id,
         fp_score=store.fp_score(incident_id),

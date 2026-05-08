@@ -7,7 +7,11 @@ import type {
   Incident,
   IncidentListResponse,
   IncidentRefreshResponse,
+  Runbook,
+  RunbookListResponse,
   SimilarResponse,
+  Suppression,
+  SuppressionListResponse,
 } from "./types";
 
 const API_ROOT = "/api";
@@ -169,6 +173,38 @@ export function addCaseNote(
 
 export function deleteCase(caseId: string): Promise<void> {
   return request<void>(`/cases/${encodeURIComponent(caseId)}`, {
+    method: "DELETE",
+  });
+}
+
+export function listRunbooks(): Promise<RunbookListResponse> {
+  return request<RunbookListResponse>(`/runbooks`);
+}
+
+export function getRunbook(techniqueId: string): Promise<Runbook> {
+  return request<Runbook>(`/runbooks/${encodeURIComponent(techniqueId)}`);
+}
+
+export function listSuppressions(): Promise<SuppressionListResponse> {
+  return request<SuppressionListResponse>(`/suppressions`);
+}
+
+export function createSuppression(payload: {
+  name: string;
+  match: Record<string, unknown>;
+  fp_score: number;
+  ttl_days?: number | null;
+  author?: string | null;
+  reason?: string | null;
+}): Promise<Suppression> {
+  return request<Suppression>(`/suppressions`, {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export function deleteSuppression(suppressionId: string): Promise<void> {
+  return request<void>(`/suppressions/${encodeURIComponent(suppressionId)}`, {
     method: "DELETE",
   });
 }

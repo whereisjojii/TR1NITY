@@ -1,0 +1,26 @@
+# Layer-1 whitelist — operator-authored, version-controlled.
+#
+# A rule fires when *every* key in `match` is satisfied by the incident.
+# Match values can be scalar, list (any-of), "*" (any non-empty value),
+# or nested mapping. fp_score is clamped to [0, 1].
+#
+# This file is loaded by services/api/app/fp/whitelist.py at startup.
+# Override the path with TR1NITY_API_FP_WHITELIST.
+
+- name: Authorized vulnerability scanners
+  match:
+    sources: [firewall]
+    source.ip: [10.10.99.10, 10.10.99.11]
+  fp_score: 0.95
+  ttl_days: never
+  rationale: "Tenable / OpenVAS scanners — pre-approved by the SOC."
+
+- name: Internal monitoring health probes (HTTP)
+  match:
+    sources: [waf]
+  # Wider rule: any WAF event whose member URL path is /healthcheck or
+  # /readyz is treated as 80% likely FP. Specific suppression rules
+  # (Layer 3) can raise this further per-route.
+  fp_score: 0.80
+  ttl_days: never
+  rationale: "Health-probe noise from internal load balancers."

@@ -35,6 +35,12 @@ export interface FPFeedback {
   submitted_at: string;
 }
 
+export interface FPLayerHit {
+  layer: "L1" | "L2" | "L3" | "analyst";
+  score: number;
+  detail: Record<string, unknown>;
+}
+
 export interface Incident {
   incident_id: string;
   title: string;
@@ -53,8 +59,46 @@ export interface Incident {
   intel_hits: IntelHit[];
   sigma_matches: string[];
   fp_score?: number | null;
+  fp_layers?: FPLayerHit[];
   fp_feedback?: FPFeedback | null;
+  runbook_url?: string | null;
   similarity_score?: number | null;
+}
+
+export interface RunbookSummary {
+  technique_id: string;
+  tactic_id?: string | null;
+  title: string;
+  severity: string;
+  url: string;
+}
+
+export interface Runbook extends RunbookSummary {
+  body: string;
+  references: string[];
+}
+
+export interface RunbookListResponse {
+  items: RunbookSummary[];
+  total: number;
+}
+
+export interface Suppression {
+  suppression_id: string;
+  name: string;
+  match: Record<string, unknown>;
+  fp_score: number;
+  ttl_days?: number | null;
+  author?: string | null;
+  reason?: string | null;
+  created_at: string;
+  expires_at?: string | null;
+}
+
+export interface SuppressionListResponse {
+  items: Suppression[];
+  total: number;
+  fetched_at: string;
 }
 
 export interface IncidentListResponse {
