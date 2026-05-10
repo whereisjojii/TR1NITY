@@ -3,4 +3,4 @@
 # returns 0.0 from Layer 2 when joblib/sklearn are missing).
 -r requirements.txt
 scikit-learn==1.5.2
-joblib==1.4.2
+joblib==1.5.3
